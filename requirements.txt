@@ -1,2 +1,3 @@
 chainlit
+loguru
 pydantic-ai-slim[google]

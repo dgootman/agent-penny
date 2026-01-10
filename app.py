@@ -3,6 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
+from loguru import logger
 from pydantic_ai import (
     Agent,
     AgentRunResultEvent,
@@ -17,18 +18,25 @@ def current_date(iana_timezone: str | None = None) -> str:
     ).isoformat()
 
 
-agent = Agent(os.environ["MODEL"], tools=[current_date])
+model = os.environ["MODEL"]
+logger.debug({"model": model})
+
+agent = Agent(model, tools=[current_date])
 
 
 @cl.on_message
 async def main(message: cl.Message):
     message_history = cl.user_session.get("message_history", [])
 
+    logger.trace({"message": message.to_dict(), "message_history": message_history})
+
     stream = agent.run_stream_events(message.content, message_history=message_history)
 
     steps: dict[str, cl.Step] = {}
 
     async for event in stream:
+        logger.trace({"event": event})
+
         if isinstance(event, AgentRunResultEvent):
             await cl.Message(event.result.output).send()
             cl.user_session.set("message_history", event.result.all_messages())
