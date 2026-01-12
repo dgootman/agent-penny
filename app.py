@@ -18,14 +18,19 @@ def current_date(iana_timezone: str | None = None) -> str:
     ).isoformat()
 
 
-model = os.environ["MODEL"]
-logger.debug({"model": model})
+@cl.on_chat_start
+async def on_chat_start():
+    model = os.environ["MODEL"]
+    logger.debug("Creating agent", model=model)
 
-agent = Agent(model, tools=[current_date])
+    agent = Agent(model, tools=[current_date])
+    cl.user_session.set("agent", agent)
 
 
 @cl.on_message
 async def main(message: cl.Message):
+    agent: Agent = cl.user_session.get("agent")
+
     message_history = cl.user_session.get("message_history", [])
 
     logger.trace({"message": message.to_dict(), "message_history": message_history})
