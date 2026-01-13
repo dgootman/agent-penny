@@ -10,4 +10,4 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
 COPY .chainlit .
 COPY *.py .
 
-CMD [ "chainlit", "run", "-w", "--host", "0.0.0.0", "app.py" ]
+CMD [ "chainlit", "run", "--host", "0.0.0.0", "app.py" ]
