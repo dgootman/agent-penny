@@ -1,4 +1,7 @@
+import dataclasses
+import json
 import os
+import sys
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -10,6 +13,46 @@ from pydantic_ai import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
 )
+
+
+def default_json(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if dataclasses.is_dataclass(obj):
+        return {"__type": type(obj).__name__} | dataclasses.asdict(obj)
+    if os.environ.get("LOGURU_LEVEL") == "TRACE":
+        warning = json.dumps(
+            {
+                "time": datetime.now().isoformat(),
+                "level": "WARNING",
+                "message": f"Cannot serialize object of type: {type(obj)}",
+            }
+        )
+        sys.stderr.write(f"{warning}\n")
+    return str(obj)
+
+
+def to_json(obj):
+    return json.dumps(obj, default=default_json, ensure_ascii=False)
+
+
+def json_log_sink(message):
+    record = message.record
+    text = to_json(
+        {
+            "time": record["time"],
+            "thread": f"{record['thread'].name}({record['thread'].id})",
+            "level": record["level"].name,
+            "message": record["message"],
+        }
+        | ({"context": record["extra"]} if record["extra"] else {})
+        | ({"exception": record["exception"]} if record["exception"] else {}),
+    )
+    sys.stderr.write(f"{text}\n")
+
+
+logger.remove()
+logger.add(json_log_sink)
 
 
 def current_date(iana_timezone: str | None = None) -> str:
