@@ -71,7 +71,7 @@ async def on_chat_start():
 
 
 @cl.on_message
-async def main(message: cl.Message):
+async def on_message(message: cl.Message):
     agent: Agent = cl.user_session.get("agent")
 
     message_history = cl.user_session.get("message_history", [])
