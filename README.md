@@ -5,7 +5,8 @@ Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainl
 ## Features
 
 - Conversational AI agent powered by `pydantic-ai`.
-- Extensible with custom tools. (Includes a `current_date` tool as an example).
+- Extensible with custom tools (includes `current_date`, `load_memory`, and `save_memory` tools).
+- Persistent memory to retain key details from past conversations.
 - Supports various LLM backends (Bedrock, Google, OpenAI).
 - Structured logging with `loguru`.
 - Ready for containerization with Docker.
@@ -78,6 +79,7 @@ You can also build and run the application using Docker.
 
 -   `MODEL`: (Required) Specifies the LLM to use. Examples: `openai:gpt-5`, `google-gla:gemini-2.5-pro`, `bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0`.
 -   `LOGURU_LEVEL`: (Optional) Sets the logging level. Defaults to `DEBUG`. Set to `TRACE` for verbose event logging.
+-   `DATA_DIR`: (Optional) Specifies the directory to store agent data, such as memories. Defaults to `~/.local/share/agent-penny`.
 
 ## Built With
 

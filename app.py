@@ -3,6 +3,7 @@ import json
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
@@ -20,6 +21,9 @@ def default_json(obj):
         return obj.isoformat()
     if dataclasses.is_dataclass(obj):
         return {"__type": type(obj).__name__} | dataclasses.asdict(obj)
+
+    # Write warning directly to stderr if the object could not be serialized
+    # Don't use `logger` to avoid recursion since `json_log_sink` uses this function
     if os.environ.get("LOGURU_LEVEL") == "TRACE":
         warning = json.dumps(
             {
@@ -29,6 +33,7 @@ def default_json(obj):
             }
         )
         sys.stderr.write(f"{warning}\n")
+
     return str(obj)
 
 
@@ -54,6 +59,13 @@ def json_log_sink(message):
 logger.remove()
 logger.add(json_log_sink)
 
+data_dir = Path(os.environ.get("DATA_DIR", "~/.local/share/agent-penny")).expanduser()
+data_dir.mkdir(parents=True, exist_ok=True)
+
+memory_file = data_dir / "memories.txt"
+if not memory_file.exists():
+    memory_file.write_text("")
+
 
 def current_date(iana_timezone: str | None = None) -> str:
     return datetime.now(
@@ -61,12 +73,37 @@ def current_date(iana_timezone: str | None = None) -> str:
     ).isoformat()
 
 
+def load_memory():
+    """Load the agent's persistent memory of key details from past conversations."""
+
+    return memory_file.read_text()
+
+
+def save_memory(memory: str):
+    """
+    Persist the agent's memory of key details that may impact future conversations.
+    When adding new memory, retain all existing essential information, and remove outdated or inconsistent details to keep memory concise and accurate.
+    """
+
+    memory_file.write_text(memory)
+
+
 @cl.on_chat_start
 async def on_chat_start():
     model = os.environ["MODEL"]
     logger.debug("Creating agent", model=model)
 
-    agent = Agent(model, tools=[current_date])
+    agent = Agent(
+        model,
+        tools=[
+            current_date,
+            load_memory,
+            save_memory,
+        ],
+        system_prompt=[
+            f"You know the following from previous conversations: {load_memory()}"
+        ],
+    )
     cl.user_session.set("agent", agent)
 
 
