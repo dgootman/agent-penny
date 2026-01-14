@@ -81,8 +81,18 @@ def load_memory():
 
 def save_memory(memory: str):
     """
-    Persist the agent's memory of key details that may impact future conversations.
-    When adding new memory, retain all existing essential information, and remove outdated or inconsistent details to keep memory concise and accurate.
+    Persist long-term agent memory that may affect future conversations.
+
+    Workflow:
+    - Always call `load_memory` first.
+    - Merge existing memory with new information.
+    - Resolve conflicts and remove outdated details.
+    - Call `save_memory` with the full merged memory.
+
+    Guidelines:
+    - Retain all relevant information.
+    - This overwrites prior memory; never save partial updates.
+    - Keep memory accurate, consistent, and concise.
     """
 
     memory_file.write_text(memory)
