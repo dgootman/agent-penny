@@ -7,7 +7,8 @@ COPY requirements.txt .
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     uv pip install --system -r requirements.txt
 
-COPY .chainlit .
+COPY chainlit.md .
+COPY .chainlit .chainlit
 COPY *.py .
 
 VOLUME [ "/usr/local/share/agent-penny" ]
