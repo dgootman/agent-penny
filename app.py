@@ -7,6 +7,10 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
+from chainlit.oauth_providers import GoogleOAuthProvider
+from chainlit.oauth_providers import providers as oauth_providers
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 from loguru import logger
 from pydantic_ai import (
     Agent,
@@ -14,6 +18,7 @@ from pydantic_ai import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
 )
+from slugify import slugify
 
 
 def default_json(obj):
@@ -62,9 +67,63 @@ logger.add(json_log_sink)
 data_dir = Path(os.environ.get("DATA_DIR", "~/.local/share/agent-penny")).expanduser()
 data_dir.mkdir(parents=True, exist_ok=True)
 
-memory_file = data_dir / "memories.txt"
-if not memory_file.exists():
-    memory_file.write_text("")
+
+class ExtendedGoogleOAuthProvider(GoogleOAuthProvider):
+    def __init__(self):
+        super().__init__()
+
+        # Add Gmail and Calendar to authentication scope
+        self.authorize_params["scope"] = " ".join(
+            {
+                *self.authorize_params["scope"].split(" "),
+                "https://www.googleapis.com/auth/gmail.readonly",
+                "https://www.googleapis.com/auth/calendar.readonly",
+            }
+        )
+
+        # Add consent prompt to receive refresh token
+        self.authorize_params["prompt"] = "consent"
+
+        self.refresh_token = None
+
+    async def get_raw_token_response(self, code: str, url: str) -> dict:
+        if self.refresh_token is not None:
+            raise RuntimeError("Refresh token shouldn't be set")
+
+        response = await super().get_raw_token_response(code, url)
+        self.refresh_token = response["refresh_token"]
+
+        return response
+
+    async def get_user_info(self, token: str) -> tuple[dict[str, str], cl.User]:
+        if self.refresh_token is None:
+            raise RuntimeError("Refresh token not set")
+
+        (google_user, user) = await super().get_user_info(token)
+
+        user.metadata["token"] = token
+        user.metadata["refresh_token"] = self.refresh_token
+
+        self.refresh_token = None
+
+        return google_user, user
+
+
+# Replace the OAuth providers with the ExtendedGoogleOAuthProvider
+oauth_providers.clear()
+oauth_providers.append(ExtendedGoogleOAuthProvider())
+
+
+@cl.oauth_callback
+def oauth_callback(
+    provider_id: str,
+    token: str,
+    raw_user_data: dict[str, str],
+    default_user: cl.User,
+) -> cl.User | None:
+    with logger.contextualize(user_id=default_user.identifier):
+        logger.debug("User logged in", provider_id=provider_id)
+        return default_user
 
 
 def current_date(iana_timezone: str | None = None) -> str:
@@ -73,53 +132,76 @@ def current_date(iana_timezone: str | None = None) -> str:
     ).isoformat()
 
 
-def load_memory():
-    """Load the agent's persistent memory of key details from past conversations."""
-
-    return memory_file.read_text()
-
-
-def save_memory(memory: str):
-    """
-    Persist long-term agent memory that may affect future conversations.
-
-    Workflow:
-    - Always call `load_memory` first.
-    - Merge existing memory with new information.
-    - Resolve conflicts and remove outdated details.
-    - Call `save_memory` with the full merged memory.
-
-    Guidelines:
-    - Retain all relevant information.
-    - This overwrites prior memory; never save partial updates.
-    - Keep memory accurate, consistent, and concise.
-    """
-
-    memory_file.write_text(memory)
-
-
 @cl.on_chat_start
 async def on_chat_start():
-    model = os.environ["MODEL"]
-    logger.debug("Creating agent", model=model)
+    user: cl.User = cl.user_session.get("user")
 
-    agent = Agent(
-        model,
-        tools=[
-            current_date,
-            load_memory,
-            save_memory,
-        ],
-        system_prompt=[
-            f"You know the following from previous conversations: {load_memory()}"
-        ],
-    )
-    cl.user_session.set("agent", agent)
+    with logger.contextualize(user_id=user.identifier):
+        logger.debug("Chat started")
+
+        token = user.metadata["token"]
+        refresh_token = user.metadata["refresh_token"]
+
+        credentials = Credentials(token, refresh_token=refresh_token)
+        oauth2_service = build("oauth2", "v2", credentials=credentials)
+        token_info = oauth2_service.tokeninfo().execute()
+
+        logger.debug("Token info", token_info=token_info)
+
+        user_data_dir = data_dir / slugify(user.identifier)
+        user_data_dir.mkdir(parents=True, exist_ok=True)
+
+        memory_file = user_data_dir / "memories.txt"
+        if not memory_file.exists():
+            memory_file.write_text("")
+
+        def load_memory():
+            """Load the agent's persistent memory of key details from past conversations."""
+
+            return memory_file.read_text()
+
+        def save_memory(memory: str):
+            """
+            Persist long-term agent memory that may affect future conversations.
+
+            Workflow:
+            - Always call `load_memory` first.
+            - Merge existing memory with new information.
+            - Resolve conflicts and remove outdated details.
+            - Call `save_memory` with the full merged memory.
+
+            Guidelines:
+            - Retain all relevant information.
+            - This overwrites prior memory; never save partial updates.
+            - Keep memory accurate, consistent, and concise.
+            """
+
+            memory_file.write_text(memory)
+
+        model = os.environ["MODEL"]
+        logger.debug("Creating agent", model=model)
+
+        agent = Agent(
+            model,
+            tools=[
+                current_date,
+                load_memory,
+                save_memory,
+            ],
+            system_prompt=[
+                f"You know the following from previous conversations: {load_memory()}"
+            ],
+        )
+        cl.user_session.set("agent", agent)
 
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    with logger.contextualize(message_id=message.id):
+    user: cl.User = cl.user_session.get("user")
+
+    with logger.contextualize(user_id=user.identifier, message_id=message.id):
+        logger.debug("Message received")
+
         agent: Agent = cl.user_session.get("agent")
 
         message_history = cl.user_session.get("message_history", [])
