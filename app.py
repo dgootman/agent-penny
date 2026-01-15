@@ -142,8 +142,17 @@ async def on_chat_start():
         token = user.metadata["token"]
         refresh_token = user.metadata["refresh_token"]
 
-        credentials = Credentials(token, refresh_token=refresh_token)
+        credentials = Credentials(
+            token,
+            refresh_token=refresh_token,
+            client_id=os.environ["OAUTH_GOOGLE_CLIENT_ID"],
+            client_secret=os.environ["OAUTH_GOOGLE_CLIENT_SECRET"],
+            token_uri="https://oauth2.googleapis.com/token",
+        )
         oauth2_service = build("oauth2", "v2", credentials=credentials)
+        calendar_service = build("calendar", "v3", credentials=credentials)
+        email_service = build("gmail", "v1", credentials=credentials)
+
         token_info = oauth2_service.tokeninfo().execute()
 
         logger.debug("Token info", token_info=token_info)
@@ -178,6 +187,60 @@ async def on_chat_start():
 
             memory_file.write_text(memory)
 
+        def calendar_list():
+            logger.debug("Listing calendars")
+
+            response = calendar_service.calendarList().list().execute()
+            calendars = response["items"]
+
+            while page_token := response.get("nextPageToken"):
+                response = (
+                    calendar_service.calendarList().list(pageToken=page_token).execute()
+                )
+                calendars += response["items"]
+
+            logger.debug("Listed calendars", calendars=calendars)
+            return calendars
+
+        def calendar_list_events(
+            start_time: datetime,
+            end_time: datetime,
+            # calendar_ids: list[str] | None = None,
+        ):
+            logger.debug(
+                "Listing calendar events",
+                start_time=start_time,
+                end_time=end_time,
+                # calendar_ids=calendar_ids,
+            )
+
+            # if not calendar_ids:
+            calendars = calendar_list()
+            calendar_ids = [calendar["id"] for calendar in calendars]
+
+            events = [
+                event | {"calendar_id": calendar_id}
+                for calendar_id in calendar_ids
+                for event in calendar_service.events()
+                .list(
+                    calendarId=calendar_id,
+                    timeMin=start_time.isoformat(),
+                    timeMax=end_time.isoformat(),
+                )
+                .execute()["items"]
+            ]
+
+            return events
+
+        def email_list_messages(query: str | None = None, max_results: int = 100):
+            logger.debug("Listing mail messages", query=query, max_results=max_results)
+            return (
+                email_service.users()
+                .messages()
+                .list(userId="me", q=query, maxResults=max_results)
+                .execute()["messages"]
+            )
+
         model = os.environ["MODEL"]
         logger.debug("Creating agent", model=model)
 
@@ -187,6 +250,9 @@ async def on_chat_start():
                 current_date,
                 load_memory,
                 save_memory,
+                calendar_list,
+                calendar_list_events,
+                email_list_messages,
             ],
             system_prompt=[
                 f"You know the following from previous conversations: {load_memory()}"
