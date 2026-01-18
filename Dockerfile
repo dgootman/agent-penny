@@ -10,6 +10,7 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
 COPY chainlit.md .
 COPY .chainlit .chainlit
 COPY *.py .
+COPY ./agent_penny ./agent_penny
 
 VOLUME [ "/usr/local/share/agent-penny" ]
 ENV DATA_DIR=/usr/local/share/agent-penny
