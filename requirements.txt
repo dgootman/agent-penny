@@ -2,5 +2,6 @@ chainlit
 google-api-python-client
 google-api-python-client-stubs
 loguru
+markitdown
 pydantic-ai-slim[bedrock,google,openai]
 python-slugify
