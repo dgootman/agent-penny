@@ -132,6 +132,20 @@ def current_date(iana_timezone: str | None = None) -> str:
     ).isoformat()
 
 
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(
+            label="📅 Today's Calendar",
+            message="What's on my calendar today?",
+        ),
+        cl.Starter(
+            label="✉️ Mail Summary",
+            message="Summarize the latest 10 e-mails.",
+        ),
+    ]
+
+
 @cl.on_chat_start
 async def on_chat_start():
     user: cl.User = cl.user_session.get("user")
