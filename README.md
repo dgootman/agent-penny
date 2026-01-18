@@ -33,6 +33,11 @@ Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainl
     uv pip install -r requirements.txt
     ```
 
+3. Finally, `source` the `.venv`.
+    ```bash
+    source .venv/bin/activate
+    ```
+
 ## Usage
 
 1.  Set the environment variables for your chosen LLM. For example:
@@ -49,7 +54,14 @@ Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainl
     export GOOGLE_API_KEY='your-google-api-key'
     ```
 
-    For other providers and models, refer to the [Pydantic AI Models Documentation](https://ai.pydantic.dev/models/).
+    **For AWS Bedrock:**
+    ```bash
+    export MODEL='bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0'
+    export AWS_PROFILE='your-aws-profile'
+    export AWS_DEFAULT_REGION='us-east-1'
+    ```
+
+    For other providers and models, refer to the [Pydantic AI Models Documentation](https://ai.pydantic.dev/models/). The format is generally `provider:model-name`.
 
 2.  Run the application:
     ```bash
@@ -84,5 +96,5 @@ You can also build and run the application using Docker.
 ## Built With
 
 -   [Chainlit](https://docs.chainlit.io/): For the web UI and chat interface.
--   [pydantic-ai](https://github.com/vLLM-project/pydantic-ai): For the agent and LLM interaction.
+-   [pydantic-ai](https://github.com/pydantic/pydantic-ai): For the agent and LLM interaction.
 -   [Loguru](https://loguru.readthedocs.io/): For logging.

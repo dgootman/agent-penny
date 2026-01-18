@@ -15,6 +15,8 @@ from pydantic_ai import (
     FunctionToolResultEvent,
 )
 
+from agent_penny.providers.wttr import WeatherProvider
+
 
 def default_json(obj):
     if isinstance(obj, datetime):
@@ -103,12 +105,15 @@ async def on_chat_start():
     model = os.environ["MODEL"]
     logger.debug("Creating agent", model=model)
 
+    weather = WeatherProvider()
+
     agent = Agent(
         model,
         tools=[
             current_date,
             load_memory,
             save_memory,
+            *weather.tools,
         ],
         system_prompt=[
             f"You know the following from previous conversations: {load_memory()}"
