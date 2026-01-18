@@ -11,6 +11,7 @@ from chainlit.oauth_providers import GoogleOAuthProvider
 from chainlit.oauth_providers import providers as oauth_providers
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from fastapi import Request, Response
 from loguru import logger
 from pydantic_ai import (
     Agent,
@@ -124,6 +125,12 @@ def oauth_callback(
     with logger.contextualize(user_id=default_user.identifier):
         logger.debug("User logged in", provider_id=provider_id)
         return default_user
+
+
+@cl.on_logout
+async def on_logout(request: Request, response: Response):
+    user: cl.User = cl.user_session.get("user")
+    logger.debug("User logged out", user_id=user)
 
 
 def current_date(iana_timezone: str | None = None) -> str:
