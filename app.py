@@ -195,11 +195,19 @@ async def on_chat_start():
             memory_file.write_text(memory)
 
         model = os.environ["MODEL"]
-        logger.debug("Creating agent", model=model)
+
+        tools = [current_date, load_memory, save_memory, *provider.tools]
+
+        if "PERPLEXITY_API_KEY" in os.environ:
+            from agent_penny.tools.perplexity import perplexity
+
+            tools.append(perplexity)
+
+        logger.debug("Creating agent", model=model, tools=[str(t) for t in tools])
 
         agent = Agent(
             model,
-            tools=[current_date, load_memory, save_memory, *provider.tools],
+            tools=tools,
             system_prompt=[
                 f"You know the following from previous conversations: {load_memory()}"
             ],
