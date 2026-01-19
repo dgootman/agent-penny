@@ -198,8 +198,10 @@ class GoogleProvider:
                     )
 
             def decode(value):
-                [[content, charset]] = decode_header(value)
-                return content.decode(charset) if charset else content
+                return "".join(
+                    content.decode(charset or 'utf-8') if isinstance(content, bytes) else content
+                    for content, charset in decode_header(value)
+                )
 
             return (
                 MailMessage(

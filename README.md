@@ -42,6 +42,20 @@ The application requests the following scopes:
 -   `https://www.googleapis.com/auth/gmail.readonly`
 -   `https://www.googleapis.com/auth/calendar.readonly`
 
+To grant Agent Penny access to your email and calendar, you'll need to set up OAuth.
+
+1. Generate JWT Token for Chainlit using `chainlit create-secret`.
+  - Save the secret as `CHAINLIST_AUTH_SECRET=XXXX` in `.env` or passed to chainlit as an environment variable.
+2. Set up a client ID and client secret for access to your email and calendar.
+  - For Google:
+      1. Create a Google Application following [Google Identity Docs](https://developers.google.com/identity/protocols/oauth2). Use the `Web Application` client type. If this is your first Google Application, you'll have to provide some Branding details like App Information as well.
+      2. Set Authorized JavaScript Origins as `http://localhost:8000`
+      3. Set Authorized Redirect URIs as `http://localhost:8000/auth/oauth/google/callback`
+      4. Under Audience - Add your own Gmail as a test user.
+3. Start Agent Penny with the provided `OAUTH_GOOGLE_CLIENT_ID` and `OAUTH_GOOGLE_CLIENT_SECRET` as an environment variable.
+
+For other OAuth providers, check out the [Chainlit OAuth docs](http://docs.chainlit.io/authentication/oauth).
+
 ## Getting Started
 
 ### Prerequisites
