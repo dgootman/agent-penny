@@ -2,6 +2,7 @@ import dataclasses
 import json
 import os
 import sys
+import traceback
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -13,6 +14,7 @@ from fastapi import Request, Response
 from loguru import logger
 from pydantic_ai import (
     Agent,
+    AgentRunError,
     AgentRunResultEvent,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
@@ -59,7 +61,19 @@ def json_log_sink(message):
             "message": record["message"],
         }
         | ({"context": record["extra"]} if record["extra"] else {})
-        | ({"exception": record["exception"]} if record["exception"] else {}),
+        | (
+            {
+                "exception": {
+                    "type": record["exception"].type.__name__,
+                    "value": str(record["exception"].value),
+                    "traceback": "\n".join(
+                        traceback.format_tb(record["exception"].traceback)
+                    ),
+                }
+            }
+            if record["exception"]
+            else {}
+        ),
     )
     sys.stderr.write(f"{text}\n")
 
@@ -216,45 +230,54 @@ async def on_chat_start():
 
 
 @cl.on_message
+@logger.catch
 async def on_message(message: cl.Message):
     user: cl.User = cl.user_session.get("user")
 
     with logger.contextualize(user_id=user.identifier, message_id=message.id):
-        logger.debug("Message received")
+        try:
+            logger.debug("Message received")
 
-        agent: Agent = cl.user_session.get("agent")
+            agent: Agent = cl.user_session.get("agent")
 
-        message_history = cl.user_session.get("message_history", [])
+            message_history = cl.user_session.get("message_history", [])
 
-        logger.trace(
-            "Message received",
-            message=message.to_dict(),
-            message_history=message_history,
-        )
+            logger.trace(
+                "Message received",
+                message=message.to_dict(),
+                message_history=message_history,
+            )
 
-        stream = agent.run_stream_events(
-            message.content, message_history=message_history
-        )
+            stream = agent.run_stream_events(
+                message.content, message_history=message_history
+            )
 
-        steps: dict[str, cl.Step] = {}
+            steps: dict[str, cl.Step] = {}
 
-        async for event in stream:
-            logger.trace("Event received", event=event)
+            async for event in stream:
+                logger.trace("Event received", event=event)
 
-            if isinstance(event, AgentRunResultEvent):
-                await cl.Message(event.result.output).send()
-                cl.user_session.set("message_history", event.result.all_messages())
+                if isinstance(event, AgentRunResultEvent):
+                    await cl.Message(event.result.output).send()
+                    cl.user_session.set("message_history", event.result.all_messages())
 
-            elif isinstance(event, FunctionToolCallEvent):
-                step = cl.Step(event.part.tool_name, type="tool", id=event.tool_call_id)
-                step.input = {"input": event.part.args_as_dict()}
+                elif isinstance(event, FunctionToolCallEvent):
+                    step = cl.Step(
+                        event.part.tool_name, type="tool", id=event.tool_call_id
+                    )
+                    step.input = {"input": event.part.args_as_dict()}
 
-                steps[event.tool_call_id] = step
+                    steps[event.tool_call_id] = step
 
-                await step.__aenter__()
+                    await step.__aenter__()
 
-            elif isinstance(event, FunctionToolResultEvent):
-                step = steps[event.tool_call_id]
-                step.output = {"output": event.result.model_response_object()}
+                elif isinstance(event, FunctionToolResultEvent):
+                    step = steps[event.tool_call_id]
+                    step.output = {"output": event.result.model_response_object()}
 
-                await step.__aexit__(None, None, None)
+                    await step.__aexit__(None, None, None)
+
+        except AgentRunError as e:
+            # TODO: Sanitize exceptions
+            await cl.Message(f"⚠️ **Error**: {type(e).__name__}: {e}").send()
+            raise e
