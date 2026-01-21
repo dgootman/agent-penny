@@ -2,7 +2,6 @@ import dataclasses
 import json
 import os
 import sys
-import traceback
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -12,9 +11,9 @@ from chainlit.oauth_providers import GoogleOAuthProvider
 from chainlit.oauth_providers import providers as oauth_providers
 from fastapi import Request, Response
 from loguru import logger
+from loguru._better_exceptions import ExceptionFormatter
 from pydantic_ai import (
     Agent,
-    AgentRunError,
     AgentRunResultEvent,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
@@ -51,6 +50,9 @@ def to_json(obj):
     return json.dumps(obj, default=default_json, ensure_ascii=False)
 
 
+exception_formatter = ExceptionFormatter()
+
+
 def json_log_sink(message):
     record = message.record
     text = to_json(
@@ -69,7 +71,11 @@ def json_log_sink(message):
                     "type": record["exception"].type.__name__,
                     "value": str(record["exception"].value),
                     "traceback": "\n".join(
-                        traceback.format_tb(record["exception"].traceback)
+                        exception_formatter.format_exception(
+                            record["exception"].type,
+                            record["exception"].value,
+                            record["exception"].traceback,
+                        )
                     ),
                 }
             }
@@ -236,6 +242,8 @@ async def on_chat_start():
 async def on_message(message: cl.Message):
     user: cl.User = cl.user_session.get("user")
 
+    steps = None
+
     with logger.contextualize(user_id=user.identifier, message_id=message.id):
         try:
             logger.debug("Message received")
@@ -274,12 +282,16 @@ async def on_message(message: cl.Message):
                     await step.__aenter__()
 
                 elif isinstance(event, FunctionToolResultEvent):
-                    step = steps[event.tool_call_id]
+                    step = steps.pop(event.tool_call_id)
                     step.output = {"output": event.result.model_response_object()}
 
                     await step.__aexit__(None, None, None)
 
-        except AgentRunError as e:
+        except Exception as e:
+            if steps:
+                for step in steps.values():
+                    await step.__aexit__(type(e), e, e.__traceback__)
+
             # TODO: Sanitize exceptions
             await cl.Message(f"⚠️ **Error**: {type(e).__name__}: {e}").send()
             raise e
