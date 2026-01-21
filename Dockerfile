@@ -11,6 +11,7 @@ COPY chainlit.md .
 COPY .chainlit .chainlit
 COPY *.py .
 COPY ./agent_penny ./agent_penny
+COPY ./public ./public
 
 VOLUME [ "/usr/local/share/agent-penny" ]
 ENV DATA_DIR=/usr/local/share/agent-penny

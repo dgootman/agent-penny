@@ -17,7 +17,10 @@ from pydantic_ai import (
     AgentRunResultEvent,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
+    PartEndEvent,
 )
+from pydantic_ai.models.bedrock import BedrockModelSettings
+from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 from slugify import slugify
 
 from agent_penny.providers.google import GoogleProvider
@@ -216,8 +219,6 @@ async def on_chat_start():
 
             memory_file.write_text(memory)
 
-        model = os.environ["MODEL"]
-
         tools = [current_date, load_memory, save_memory, *provider.tools]
 
         if "PERPLEXITY_API_KEY" in os.environ:
@@ -225,10 +226,51 @@ async def on_chat_start():
 
             tools.append(perplexity)
 
-        logger.debug("Creating agent", model=model, tools=[str(t) for t in tools])
+        model = os.environ["MODEL"]
+        thinking = (
+            None if "THINKING" not in os.environ else os.environ["THINKING"] == "true"
+        )
+        model_settings = None
+
+        # Thinking is enabled by default, but falls back if the model doesn't support it
+        # But if thinking is enabled explicitly, we raise an exception if the provider or model don't support it
+        if thinking is None or thinking:
+            # See: https://ai.pydantic.dev/thinking/
+            # TODO: Make model settings for thinking configurable
+            llm_provider, model_id = model.split(":", 1)
+            if llm_provider == "openai":
+                model = f"openai-responses:{model_id}"
+                model_settings = OpenAIResponsesModelSettings(
+                    openai_reasoning_effort="low",
+                    openai_reasoning_summary="detailed",
+                )
+            elif llm_provider == "bedrock":
+                if model_id.startswith("us.anthropic."):
+                    model_settings = BedrockModelSettings(
+                        bedrock_additional_model_requests_fields={
+                            "thinking": {"type": "enabled", "budget_tokens": 4000}
+                        }
+                    )
+                elif thinking is not None:
+                    raise ValueError(
+                        f"Thinking is not supported for Bedrock model: {model_id}"
+                    )
+            elif thinking is not None:
+                raise ValueError(
+                    f"Thinking is not supported for provider: {llm_provider}"
+                )
+
+        logger.debug(
+            "Creating agent",
+            model=model,
+            model_settings=model_settings,
+            thinking=thinking,
+            tools=[str(t) for t in tools],
+        )
 
         agent = Agent(
             model,
+            model_settings=model_settings,
             tools=tools,
             system_prompt=[
                 f"You know the following from previous conversations: {load_memory()}"
@@ -270,6 +312,13 @@ async def on_message(message: cl.Message):
                 if isinstance(event, AgentRunResultEvent):
                     await cl.Message(event.result.output).send()
                     cl.user_session.set("message_history", event.result.all_messages())
+
+                if isinstance(event, PartEndEvent):
+                    if event.part.part_kind == "thinking":
+                        async with cl.Step(
+                            "Thinking", type="llm", id=event.part.id
+                        ) as step:
+                            step.output = event.part.content
 
                 elif isinstance(event, FunctionToolCallEvent):
                     step = cl.Step(
