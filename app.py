@@ -3,7 +3,7 @@ import json
 import os
 import sys
 import traceback
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -25,6 +25,8 @@ from agent_penny.providers.google import GoogleProvider
 
 
 def default_json(obj):
+    if isinstance(obj, date):
+        return obj.isoformat()
     if isinstance(obj, datetime):
         return obj.isoformat()
     if dataclasses.is_dataclass(obj):
