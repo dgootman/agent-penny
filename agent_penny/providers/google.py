@@ -12,8 +12,6 @@ from googleapiclient.discovery import build
 from loguru import logger
 from markitdown import MarkItDown
 
-from agent_penny.types import CalendarEvent
-
 from ..types import Calendar, CalendarEvent, MailMessage
 
 md = MarkItDown(enable_plugins=False)
@@ -153,6 +151,69 @@ class GoogleProvider:
 
         return sorted(events, key=lambda event: event["start_time"].isoformat())
 
+    def google_message_adapter(self, message) -> MailMessage:
+        email = message_from_string(urlsafe_b64decode(message["raw"]).decode())
+
+        def get_payload():
+            payloads = list(email.walk())
+
+            text_part = next(
+                (p for p in payloads if p.get_content_type() == "text/plain"),
+                None,
+            )
+            if text_part:
+                cte = text_part.get("content-transfer-encoding")
+                if cte in ["quoted-printable", "base64"]:
+                    return text_part.get_payload(decode=True).decode()
+                payload = text_part.get_payload()
+                if isinstance(payload, str):
+                    return payload
+                return text_part.get_payload(decode=True).decode()
+
+            html_part = next(
+                (p for p in payloads if p.get_content_type() == "text/html"),
+                None,
+            )
+            if html_part:
+                return md.convert_stream(
+                    BytesIO(html_part.get_payload(decode=True))
+                ).text_content
+
+            raise ValueError(
+                f"Unsupported content types: {', '.join(p.get_content_type() for p in payloads)}"
+            )
+
+        def decode(value):
+            return "".join(
+                content.decode(charset or "utf-8")
+                if isinstance(content, bytes)
+                else content
+                for content, charset in decode_header(value)
+            )
+
+        return (
+            MailMessage(
+                id=message["id"],
+            )
+            | {"from": decode(email["from"])}
+            | {"to": decode(email["to"])}
+            | {"subject": decode(email["subject"])}
+            | {"received": datetime.fromtimestamp(int(message["internalDate"]) / 1000)}
+            | {"content": get_payload()}
+        )
+
+    def email_get_message(self, id: str) -> MailMessage:
+        message = (
+            self.email_service.users()
+            .messages()
+            .get(userId="me", id=id, format="raw")
+            .execute()
+        )
+
+        logger.trace("Google message", message_id=id, message=message)
+
+        return self.google_message_adapter(message)
+
     def email_list_messages(
         self, query: str | None = None, max_results: int = 100
     ) -> list[MailMessage]:
@@ -167,55 +228,6 @@ class GoogleProvider:
 
         logger.debug(f"Listed {len(message_metadata)} mail messages")
 
-        logger.trace("Google message metadata", message_metadata=message_metadata)
+        logger.trace("Google messages metadata", message_metadata=message_metadata)
 
-        messages = [
-            self.email_service.users()
-            .messages()
-            .get(userId="me", id=message["id"], format="raw")
-            .execute()
-            for message in message_metadata
-        ]
-
-        logger.trace("Google messages", messages=messages)
-
-        def google_message_adapter(message):
-            email = message_from_string(urlsafe_b64decode(message["raw"]).decode())
-
-            if not email.is_multipart():
-                payload = email.get_payload(decode=True).decode()
-            else:
-                part = email.get_payload()[0]
-                if part.get_content_type() == "text/plain":
-                    payload = part.get_payload(decode=True).decode()
-                elif part.get_content_type() == "text/html":
-                    payload = md.convert_stream(
-                        BytesIO(part.get_payload().encode())
-                    ).text_content
-                else:
-                    raise ValueError(
-                        f"Unsupported content type: {part.get_content_type()}"
-                    )
-
-            def decode(value):
-                return "".join(
-                    content.decode(charset or 'utf-8') if isinstance(content, bytes) else content
-                    for content, charset in decode_header(value)
-                )
-
-            return (
-                MailMessage(
-                    id=message["id"],
-                )
-                | {"from": decode(email["from"])}
-                | {"to": decode(email["to"])}
-                | {"subject": decode(email["subject"])}
-                | {
-                    "received": datetime.fromtimestamp(
-                        int(message["internalDate"]) / 1000
-                    )
-                }
-                | {"content": payload}
-            )
-
-        return list(map(google_message_adapter, messages))
+        return [self.email_get_message(message["id"]) for message in message_metadata]
