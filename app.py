@@ -316,6 +316,11 @@ async def on_message(message: cl.Message):
                             "Thinking", type="llm", id=event.part.id
                         ) as step:
                             step.output = event.part.content
+                    elif event.part.part_kind == "text":
+                        async with cl.Step(
+                            "Text", type="llm", id=event.part.id
+                        ) as step:
+                            step.output = event.part.content
 
                 elif isinstance(event, FunctionToolCallEvent):
                     step = cl.Step(
