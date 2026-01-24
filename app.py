@@ -227,18 +227,15 @@ async def on_chat_start():
             tools.append(perplexity)
 
         model = os.environ["MODEL"]
-        thinking = (
-            None if "THINKING" not in os.environ else os.environ["THINKING"] == "true"
-        )
+        thinking = os.environ.get("THINKING") == "true"
         model_settings = None
 
-        # Thinking is enabled by default, but falls back if the model doesn't support it
-        # But if thinking is enabled explicitly, we raise an exception if the provider or model don't support it
-        if thinking is None or thinking:
+        if thinking:
             # See: https://ai.pydantic.dev/thinking/
             # TODO: Make model settings for thinking configurable
             llm_provider, model_id = model.split(":", 1)
             if llm_provider == "openai":
+                # Upgrade to the OpenAI Responses API: https://platform.openai.com/docs/guides/migrate-to-responses
                 model = f"openai-responses:{model_id}"
                 model_settings = OpenAIResponsesModelSettings(
                     openai_reasoning_effort="low",
@@ -251,11 +248,11 @@ async def on_chat_start():
                             "thinking": {"type": "enabled", "budget_tokens": 4000}
                         }
                     )
-                elif thinking is not None:
+                else:
                     raise ValueError(
                         f"Thinking is not supported for Bedrock model: {model_id}"
                     )
-            elif thinking is not None:
+            else:
                 raise ValueError(
                     f"Thinking is not supported for provider: {llm_provider}"
                 )
