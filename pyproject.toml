@@ -1,0 +1,20 @@
+[project]
+name = "agent-penny"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chainlit>=2.9.6",
+    "google-api-python-client>=2.188.0",
+    "loguru>=0.7.3",
+    "markitdown>=0.1.4",
+    "perplexityai>=0.26.0",
+    "pydantic-ai-slim[bedrock,google,openai]>=1.47.0",
+    "python-slugify>=8.0.4",
+]
+
+[dependency-groups]
+dev = [
+    "google-api-python-client-stubs>=1.31.0",
+]
