@@ -1,6 +1,6 @@
 import os
 from base64 import urlsafe_b64decode
-from datetime import date, datetime
+from datetime import date, datetime, tzinfo
 from email import message_from_string
 from email.header import decode_header
 from io import BytesIO
@@ -29,7 +29,11 @@ class GoogleProvider:
             client_secret=os.environ["OAUTH_GOOGLE_CLIENT_SECRET"],
             token_uri="https://oauth2.googleapis.com/token",
         )
-        self.calendar_service = build("calendar", "v3", credentials=self.credentials)
+
+        # The Calendar API keeps throwing `SSLError: [SSL] record layer failure (_ssl.c:2580)` if the instance is reused.
+        # Instead, we'll use a context-managed instance whenever interacting with the Calendar API
+        # self.calendar_service = build("calendar", "v3", credentials=self.credentials)
+
         self.email_service = build("gmail", "v1", credentials=self.credentials)
 
         self.tools = [
@@ -38,19 +42,21 @@ class GoogleProvider:
             self.email_list_messages,
         ]
 
+    def calendar_service(self):
+        return build("calendar", "v3", credentials=self.credentials)
+
     def calendar_list(self) -> list[Calendar]:
         logger.debug("Listing calendars")
 
-        response = self.calendar_service.calendarList().list().execute()
-        calendars = response["items"]
+        with self.calendar_service() as calendar_service:
+            response = calendar_service.calendarList().list().execute()
+            calendars = response["items"]
 
-        while page_token := response.get("nextPageToken"):
-            response = (
-                self.calendar_service.calendarList()
-                .list(pageToken=page_token)
-                .execute()
-            )
-            calendars += response["items"]
+            while page_token := response.get("nextPageToken"):
+                response = (
+                    calendar_service.calendarList().list(pageToken=page_token).execute()
+                )
+                calendars += response["items"]
 
         logger.trace("Google calendars", calendars=calendars)
 
@@ -71,6 +77,32 @@ class GoogleProvider:
 
         return calendars
 
+    def google_event_adapter(
+        self, event, calendar_id: str, tz: tzinfo | None
+    ) -> CalendarEvent:
+        def date_adapter(google_date: dict[str, str]) -> datetime | date:
+            if "dateTime" in google_date:
+                if tz is None:
+                    raise ValueError("Missing timezone")
+                return datetime.fromisoformat(google_date["dateTime"]).astimezone(tz=tz)
+            if "date" in google_date:
+                return date.fromisoformat(google_date["date"])
+            raise ValueError(f"Invalid date: {google_date}")
+
+        calendar_event: CalendarEvent = {
+            "id": event["id"],
+            "name": event["summary"],
+            "start_time": date_adapter(event["start"]),
+            "end_time": date_adapter(event["end"]),
+            "calendar_id": calendar_id,
+        }
+
+        for optional_field in ["description", "location"]:
+            if event.get(optional_field):
+                calendar_event[optional_field] = event[optional_field]
+
+        return calendar_event
+
     def calendar_list_events(
         self,
         start_time: datetime,
@@ -89,65 +121,57 @@ class GoogleProvider:
         calendars = self.calendar_list()
         calendar_ids = [calendar["id"] for calendar in calendars]
 
-        calendar_events = {
-            calendar_id: self.calendar_service.events()
-            .list(
-                calendarId=calendar_id,
-                timeMin=start_time.isoformat(),
-                timeMax=end_time.isoformat(),
-            )
-            .execute()["items"]
-            for calendar_id in calendar_ids
-        }
+        if start_time.tzinfo is None and end_time.tzinfo is None:
+            start_time = start_time.astimezone(tz)
+            end_time = end_time.astimezone(tz)
+        elif start_time.tzinfo is None:
+            raise ValueError("Start time is missing a timezone")
+        elif end_time.tzinfo is None:
+            raise ValueError("End time is missing a timezone")
 
-        logger.trace("Google calendar events", calendar_events=calendar_events)
+        with self.calendar_service() as calendar_service:
+            calendar_events = {
+                calendar_id: calendar_service.events()
+                .list(
+                    calendarId=calendar_id,
+                    timeMin=start_time.isoformat(),
+                    timeMax=end_time.isoformat(),
+                )
+                .execute()["items"]
+                for calendar_id in calendar_ids
+            }
 
-        def google_date_adapter(google_date: dict[str, str]) -> datetime | date:
-            if "dateTime" in google_date:
-                return datetime.fromisoformat(google_date["dateTime"]).astimezone(tz=tz)
-            if "date" in google_date:
-                return date.fromisoformat(google_date["date"])
-            raise ValueError(f"Invalid date: {google_date}")
+            logger.trace("Google calendar events", calendar_events=calendar_events)
 
-        def google_event_adapter(event, calendar_id: str) -> CalendarEvent:
-            return CalendarEvent(
-                name=event["summary"],
-                start_time=google_date_adapter(event["start"]),
-                end_time=google_date_adapter(event["end"]),
-                calendar_id=calendar_id,
-            ) | (
-                {"description": event["description"]}
-                if event.get("description")
-                else {}
-            )
+            events: list[CalendarEvent] = []
 
-        events: list[CalendarEvent] = []
-
-        for calendar_id, google_events in calendar_events.items():
-            for event in google_events:
-                if event.get("recurrence"):
-                    response = (
-                        self.calendar_service.events()
-                        .instances(
-                            calendarId=calendar_id,
-                            eventId=event["id"],
-                            timeMin=start_time.isoformat(),
-                            timeMax=end_time.isoformat(),
+            for calendar_id, google_events in calendar_events.items():
+                for event in google_events:
+                    if event.get("recurrence"):
+                        response = (
+                            calendar_service.events()
+                            .instances(
+                                calendarId=calendar_id,
+                                eventId=event["id"],
+                                timeMin=start_time.isoformat(),
+                                timeMax=end_time.isoformat(),
+                            )
+                            .execute()
                         )
-                        .execute()
-                    )
 
-                    logger.trace(
-                        "Google calendar events for recurring event",
-                        eventId=event["id"],
-                        response=response,
-                    )
+                        logger.trace(
+                            "Google calendar events for recurring event",
+                            eventId=event["id"],
+                            response=response,
+                        )
 
-                    for instance in response["items"]:
-                        events.append(google_event_adapter(instance, calendar_id))
+                        for instance in response["items"]:
+                            events.append(
+                                self.google_event_adapter(instance, calendar_id, tz)
+                            )
 
-                else:
-                    events.append(google_event_adapter(event, calendar_id))
+                    else:
+                        events.append(self.google_event_adapter(event, calendar_id, tz))
 
         return sorted(events, key=lambda event: event["start_time"].isoformat())
 
