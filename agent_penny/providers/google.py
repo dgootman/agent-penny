@@ -37,6 +37,7 @@ class GoogleProvider:
         self.email_service = build("gmail", "v1", credentials=self.credentials)
 
         self.tools = [
+            self.calendar_add_event,
             self.calendar_list,
             self.calendar_list_events,
             self.email_list_messages,
@@ -174,6 +175,47 @@ class GoogleProvider:
                         events.append(self.google_event_adapter(event, calendar_id, tz))
 
         return sorted(events, key=lambda event: event["start_time"].isoformat())
+
+    def calendar_add_event(self, event: CalendarEvent) -> CalendarEvent:
+        logger.debug("Adding calendar event", event=event)
+
+        tz = (
+            event["start_time"].tzinfo
+            if isinstance(event["start_time"], datetime)
+            else None
+        )
+
+        def date_adapter(value: date | datetime) -> dict[str, str]:
+            if isinstance(value, datetime):
+                return {"dateTime": value.isoformat()}
+            if isinstance(value, date):
+                return {"date": value.isoformat()}
+            raise ValueError(f"Invalid date: {value}")
+
+        google_event = {
+            "summary": event["name"],
+            "location": event.get("location"),
+            "description": event.get("description"),
+            "start": date_adapter(event["start_time"]),
+            "end": date_adapter(event["end_time"]),
+        }
+
+        logger.trace("Inserting Google calendar event", google_event=google_event)
+
+        with self.calendar_service() as calendar_service:
+            google_event = (
+                calendar_service.events()
+                .insert(calendarId=event["calendar_id"], body=google_event)
+                .execute()
+            )
+
+        logger.trace("Inserted Google calendar event", google_event=google_event)
+
+        event = self.google_event_adapter(google_event, event["calendar_id"], tz)
+
+        logger.info("Added calendar event", event=event)
+
+        return event
 
     def google_message_adapter(self, message) -> MailMessage:
         email = message_from_string(urlsafe_b64decode(message["raw"]).decode())
