@@ -5,7 +5,6 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
-from chainlit.oauth_providers import GoogleOAuthProvider
 from chainlit.oauth_providers import providers as oauth_providers
 from fastapi import Request, Response
 from loguru import logger
@@ -20,6 +19,7 @@ from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 from slugify import slugify
 
+from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.logging import json_log_sink
 from agent_penny.providers.google import GoogleProvider
 
@@ -28,49 +28,6 @@ logger.add(json_log_sink)
 
 data_dir = Path(os.environ.get("DATA_DIR", "~/.local/share/agent-penny")).expanduser()
 data_dir.mkdir(parents=True, exist_ok=True)
-
-
-class ExtendedGoogleOAuthProvider(GoogleOAuthProvider):
-    def __init__(self):
-        super().__init__()
-
-        # Add Gmail and Calendar to authentication scope
-        self.authorize_params["scope"] = " ".join(
-            {
-                *self.authorize_params["scope"].split(" "),
-                "https://www.googleapis.com/auth/gmail.readonly",
-                "https://www.googleapis.com/auth/calendar.readonly",
-                "https://www.googleapis.com/auth/calendar.events.owned",
-            }
-        )
-
-        # Add consent prompt to receive refresh token
-        self.authorize_params["prompt"] = "consent"
-
-        self.refresh_token = None
-
-    async def get_raw_token_response(self, code: str, url: str) -> dict:
-        if self.refresh_token is not None:
-            raise RuntimeError("Refresh token shouldn't be set")
-
-        response = await super().get_raw_token_response(code, url)
-        self.refresh_token = response["refresh_token"]
-
-        return response
-
-    async def get_user_info(self, token: str) -> tuple[dict[str, str], cl.User]:
-        if self.refresh_token is None:
-            raise RuntimeError("Refresh token not set")
-
-        (google_user, user) = await super().get_user_info(token)
-
-        user.metadata["token"] = token
-        user.metadata["refresh_token"] = self.refresh_token
-
-        self.refresh_token = None
-
-        return google_user, user
-
 
 # Replace the OAuth providers with the ExtendedGoogleOAuthProvider
 oauth_providers.clear()
