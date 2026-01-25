@@ -1,8 +1,6 @@
-import dataclasses
 import json
 import os
-import sys
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -11,7 +9,6 @@ from chainlit.oauth_providers import GoogleOAuthProvider
 from chainlit.oauth_providers import providers as oauth_providers
 from fastapi import Request, Response
 from loguru import logger
-from loguru._better_exceptions import ExceptionFormatter
 from pydantic_ai import (
     Agent,
     AgentRunResultEvent,
@@ -23,71 +20,8 @@ from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 from slugify import slugify
 
+from agent_penny.logging import json_log_sink
 from agent_penny.providers.google import GoogleProvider
-
-
-def default_json(obj):
-    if isinstance(obj, date):
-        return obj.isoformat()
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    if dataclasses.is_dataclass(obj):
-        return {"__type": type(obj).__name__} | dataclasses.asdict(obj)
-
-    # Write warning directly to stderr if the object could not be serialized
-    # Don't use `logger` to avoid recursion since `json_log_sink` uses this function
-    if os.environ.get("LOGURU_LEVEL") == "TRACE":
-        warning = json.dumps(
-            {
-                "time": datetime.now().isoformat(),
-                "level": "WARNING",
-                "message": f"Cannot serialize object of type: {type(obj)}",
-            }
-        )
-        sys.stderr.write(f"{warning}\n")
-
-    return str(obj)
-
-
-def to_json(obj):
-    return json.dumps(obj, default=default_json, ensure_ascii=False)
-
-
-exception_formatter = ExceptionFormatter()
-
-
-def json_log_sink(message):
-    record = message.record
-    text = to_json(
-        {
-            "time": record["time"],
-            "thread": f"{record['thread'].name}({record['thread'].id})",
-            "level": record["level"].name,
-            "name": record["name"],
-            "function": record["function"],
-            "message": record["message"],
-        }
-        | ({"context": record["extra"]} if record["extra"] else {})
-        | (
-            {
-                "exception": {
-                    "type": record["exception"].type.__name__,
-                    "value": str(record["exception"].value),
-                    "traceback": "\n".join(
-                        exception_formatter.format_exception(
-                            record["exception"].type,
-                            record["exception"].value,
-                            record["exception"].traceback,
-                        )
-                    ),
-                }
-            }
-            if record["exception"]
-            else {}
-        ),
-    )
-    sys.stderr.write(f"{text}\n")
-
 
 logger.remove()
 logger.add(json_log_sink)
