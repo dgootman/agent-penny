@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+import getpass
 
 import chainlit as cl
 from chainlit.oauth_providers import providers as oauth_providers
@@ -29,26 +30,41 @@ logger.add(json_log_sink)
 data_dir = Path(os.environ.get("DATA_DIR", "~/.local/share/agent-penny")).expanduser()
 data_dir.mkdir(parents=True, exist_ok=True)
 
-# Replace the OAuth providers with the ExtendedGoogleOAuthProvider
-oauth_providers.clear()
-oauth_providers.append(ExtendedGoogleOAuthProvider())
+google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
+
+if google_auth_enabled:
+    logger.debug("Google mode")
+
+    # Replace the OAuth providers with the ExtendedGoogleOAuthProvider
+    oauth_providers.clear()
+    oauth_providers.append(ExtendedGoogleOAuthProvider())
+
+    @cl.oauth_callback
+    async def oauth_callback(
+        provider_id: str,
+        token: str,
+        raw_user_data: dict[str, str],
+        default_user: cl.User,
+        id_token: str | None,
+    ) -> cl.User | None:
+        with logger.contextualize(user_id=default_user.identifier):
+            logger.debug("User logged in", provider_id=provider_id)
+            return default_user
+
+else:
+    logger.debug("Standalone mode")
 
 
-@cl.oauth_callback
-def oauth_callback(
-    provider_id: str,
-    token: str,
-    raw_user_data: dict[str, str],
-    default_user: cl.User,
-) -> cl.User | None:
-    with logger.contextualize(user_id=default_user.identifier):
-        logger.debug("User logged in", provider_id=provider_id)
-        return default_user
+def get_user() -> cl.User:
+    if google_auth_enabled:
+        return cl.user_session.get("user")
+
+    return cl.User(identifier=getpass.getuser(), metadata={"provider": "standalone"})
 
 
 @cl.on_logout
 async def on_logout(request: Request, response: Response):
-    user: cl.User = cl.user_session.get("user")
+    user = get_user()
     logger.debug("User logged out", user_id=user)
 
 
@@ -74,7 +90,7 @@ async def set_starters():
 
 @cl.on_chat_start
 async def on_chat_start():
-    user: cl.User = cl.user_session.get("user")
+    user = get_user()
 
     with logger.contextualize(user_id=user.identifier):
         logger.debug("Chat started")
@@ -111,7 +127,11 @@ async def on_chat_start():
 
             memory_file.write_text(memory)
 
-        tools = [current_date, load_memory, save_memory, *provider.tools]
+        tools = [current_date, load_memory, save_memory]
+
+        if google_auth_enabled:
+            provider = GoogleProvider(user)
+            tools += provider.tools
 
         if "PERPLEXITY_API_KEY" in os.environ:
             from agent_penny.tools.perplexity import perplexity
@@ -171,7 +191,7 @@ async def on_chat_start():
 @cl.on_message
 @logger.catch
 async def on_message(message: cl.Message):
-    user: cl.User = cl.user_session.get("user")
+    user: cl.User = get_user()
 
     steps = None
 
