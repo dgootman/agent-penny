@@ -15,6 +15,8 @@ from pydantic_ai import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     PartEndEvent,
+    ToolReturnPart,
+    RetryPromptPart,
 )
 from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
@@ -244,7 +246,12 @@ async def on_message(message: cl.Message):
 
                 elif isinstance(event, FunctionToolResultEvent):
                     step = steps.pop(event.tool_call_id)
-                    step.output = {"output": event.result.model_response_object()}
+
+                    if isinstance(event.result, ToolReturnPart):
+                        step.output = {"output": event.result.model_response_object()}
+                    elif isinstance(event.result, RetryPromptPart):
+                        step.is_error = True
+                        step.output = {"error": event.result.model_response()}
 
                     await step.__aexit__(None, None, None)
 

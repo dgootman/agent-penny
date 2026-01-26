@@ -9,8 +9,10 @@ from zoneinfo import ZoneInfo
 import chainlit as cl
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from loguru import logger
 from markitdown import MarkItDown
+from pydantic_ai import ModelRetry
 
 from ..types import Calendar, CalendarEvent, MailMessage
 
@@ -109,18 +111,17 @@ class GoogleProvider:
         start_time: datetime,
         end_time: datetime,
         users_iana_timezone: str,
+        calendar_ids: list[str] | None = None,
     ) -> list[CalendarEvent]:
         logger.debug(
             "Listing calendar events",
             start_time=start_time,
             end_time=end_time,
             users_iana_timezone=users_iana_timezone,
+            calendar_ids=calendar_ids,
         )
 
         tz = ZoneInfo(users_iana_timezone)
-
-        calendars = self.calendar_list()
-        calendar_ids = [calendar["id"] for calendar in calendars]
 
         if start_time.tzinfo is None and end_time.tzinfo is None:
             start_time = start_time.replace(tzinfo=tz)
@@ -130,17 +131,27 @@ class GoogleProvider:
         elif end_time.tzinfo is None:
             raise ValueError("End time is missing a timezone")
 
+        if not calendar_ids:
+            calendars = self.calendar_list()
+            calendar_ids = [calendar["id"] for calendar in calendars]
+
         with self.calendar_service() as calendar_service:
-            calendar_events = {
-                calendar_id: calendar_service.events()
-                .list(
-                    calendarId=calendar_id,
-                    timeMin=start_time.isoformat(),
-                    timeMax=end_time.isoformat(),
-                )
-                .execute()["items"]
-                for calendar_id in calendar_ids
-            }
+            calendar_events = {}
+            for calendar_id in calendar_ids:
+                try:
+                    calendar_events[calendar_id] = (
+                        calendar_service.events()
+                        .list(
+                            calendarId=calendar_id,
+                            timeMin=start_time.isoformat(),
+                            timeMax=end_time.isoformat(),
+                        )
+                        .execute()["items"]
+                    )
+                except HttpError as e:
+                    if e.status_code == 404:
+                        raise ModelRetry(f"Calendar not found: {calendar_id}")
+                    raise e
 
             logger.trace("Google calendar events", calendar_events=calendar_events)
 
