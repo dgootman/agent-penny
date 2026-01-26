@@ -17,7 +17,8 @@ Agent Penny is a personal AI assistant built with [Chainlit](httpss://docs.chain
 ### Integrations
 
 -   **Google**: Securely connect your Google account to:
-    -   Read events from your Google Calendar.
+    -   List your Google Calendars.
+    -   Read and create events from your Google Calendar.
     -   List and read your emails from Gmail.
 -   **Perplexity**: (Optional) If configured, the agent can use Perplexity for powerful, up-to-date web searches.
 
@@ -25,7 +26,7 @@ Agent Penny is a personal AI assistant built with [Chainlit](httpss://docs.chain
 
 The agent comes equipped with the following tools:
 
--   **Google Calendar**: `calendar_list` and `calendar_list_events` to manage your schedule.
+-   **Google Calendar**: `calendar_list`, `calendar_list_events`, and `calendar_add_event` to manage your schedule.
 -   **Gmail**: `email_list_messages` to access your emails.
 -   **Perplexity**: `perplexity` for web searches (requires API key).
 -   **Memory**: `load_memory` and `save_memory` for long-term persistence.
