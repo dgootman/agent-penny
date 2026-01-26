@@ -82,6 +82,16 @@ For other OAuth providers, check out the [Chainlit OAuth docs](http://docs.chain
 
 ## Usage
 
+### Standalone Mode (Without Google OAuth)
+
+Agent Penny can be run without Google OAuth for local development or if you do not require Google integrations (Calendar or Gmail). To enable standalone mode, simply omit the `OAUTH_GOOGLE_CLIENT_ID` and `OAUTH_GOOGLE_CLIENT_SECRET` environment variables. In this mode:
+
+-   User authentication will use your system's username.
+-   Google Calendar and Gmail tools will not be available.
+-   Other features, such as LLM interaction, Perplexity search (if configured), and persistent memory, will function as usual.
+
+### With Google OAuth
+
 1.  Set the environment variables for your chosen LLM and other configurations. For example:
 
     **For Google Gemini:**
