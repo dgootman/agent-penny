@@ -12,6 +12,7 @@ class CalendarEvent(TypedDict):
     id: str
     name: str
     description: NotRequired[str]
+    location: NotRequired[str]
     start_time: datetime | date
     end_time: datetime | date
     calendar_id: str
