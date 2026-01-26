@@ -123,8 +123,8 @@ class GoogleProvider:
         calendar_ids = [calendar["id"] for calendar in calendars]
 
         if start_time.tzinfo is None and end_time.tzinfo is None:
-            start_time = start_time.astimezone(tz)
-            end_time = end_time.astimezone(tz)
+            start_time = start_time.replace(tzinfo=tz)
+            end_time = end_time.replace(tzinfo=tz)
         elif start_time.tzinfo is None:
             raise ValueError("Start time is missing a timezone")
         elif end_time.tzinfo is None:
