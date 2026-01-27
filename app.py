@@ -47,7 +47,7 @@ if google_auth_enabled:
         token: str,
         raw_user_data: dict[str, str],
         default_user: cl.User,
-        id_token: str | None,
+        id_token: str | None = None,
     ) -> cl.User | None:
         with logger.contextualize(user_id=default_user.identifier):
             logger.debug("User logged in", provider_id=provider_id)
