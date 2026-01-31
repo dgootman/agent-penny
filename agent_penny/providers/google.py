@@ -1,7 +1,7 @@
 import os
 from base64 import urlsafe_b64decode
 from datetime import date, datetime, tzinfo
-from email import message_from_string
+from email import message_from_bytes
 from email.header import decode_header
 from io import BytesIO
 from zoneinfo import ZoneInfo
@@ -229,7 +229,7 @@ class GoogleProvider:
         return event
 
     def google_message_adapter(self, message) -> MailMessage:
-        email = message_from_string(urlsafe_b64decode(message["raw"]).decode())
+        email = message_from_bytes(urlsafe_b64decode(message["raw"]))
 
         def get_payload():
             payloads = list(email.walk())
@@ -268,14 +268,18 @@ class GoogleProvider:
                 for content, charset in decode_header(value)
             )
 
-        return {
+        mail_message: MailMessage = {
             "id": message["id"],
-            "to": decode(email["to"]),
             "from": decode(email["from"]),
             "subject": decode(email["subject"]),
             "received": datetime.fromtimestamp(int(message["internalDate"]) / 1000),
             "content": get_payload(),
         }
+
+        if email["to"]:
+            mail_message["to"] = decode(email["to"])
+
+        return mail_message
 
     def email_get_message(self, id: str) -> MailMessage:
         message = (
@@ -290,7 +294,7 @@ class GoogleProvider:
         return self.google_message_adapter(message)
 
     def email_list_messages(
-        self, query="in:inbox", max_results: int = 100
+        self, query="in:inbox", max_results=100
     ) -> list[MailMessage]:
         logger.debug("Listing mail messages", query=query, max_results=max_results)
 

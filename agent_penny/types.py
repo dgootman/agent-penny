@@ -24,7 +24,7 @@ MailMessage = TypedDict(
         "id": str,
         "subject": str,
         "from": str,
-        "to": str,
+        "to": NotRequired[str],
         "received": datetime,
         "content": str,
     },
