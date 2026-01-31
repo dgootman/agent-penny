@@ -24,6 +24,7 @@ from slugify import slugify
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.logging import json_log_sink
 from agent_penny.providers.google import GoogleProvider
+from agent_penny.tools.perplexity import perplexity
 
 logger.remove()
 logger.add(json_log_sink)
@@ -133,8 +134,6 @@ async def on_chat_start():
             tools += provider.tools
 
         if "PERPLEXITY_API_KEY" in os.environ:
-            from agent_penny.tools.perplexity import perplexity
-
             tools.append(perplexity)
 
         model = os.environ["MODEL"]
