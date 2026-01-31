@@ -17,4 +17,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "google-api-python-client-stubs>=1.31.0",
+    "mypy>=1.19.1",
+    "ruff>=0.14.14",
 ]

@@ -102,7 +102,7 @@ class GoogleProvider:
 
         for optional_field in ["description", "location"]:
             if event.get(optional_field):
-                calendar_event[optional_field] = event[optional_field]
+                calendar_event[optional_field] = event[optional_field]  # type: ignore[literal-required]
 
         return calendar_event
 
@@ -268,16 +268,14 @@ class GoogleProvider:
                 for content, charset in decode_header(value)
             )
 
-        return (
-            MailMessage(
-                id=message["id"],
-            )
-            | {"from": decode(email["from"])}
-            | {"to": decode(email["to"])}
-            | {"subject": decode(email["subject"])}
-            | {"received": datetime.fromtimestamp(int(message["internalDate"]) / 1000)}
-            | {"content": get_payload()}
-        )
+        return {
+            "id": message["id"],
+            "to": decode(email["to"]),
+            "from": decode(email["from"]),
+            "subject": decode(email["subject"]),
+            "received": datetime.fromtimestamp(int(message["internalDate"]) / 1000),
+            "content": get_payload(),
+        }
 
     def email_get_message(self, id: str) -> MailMessage:
         message = (
@@ -292,7 +290,7 @@ class GoogleProvider:
         return self.google_message_adapter(message)
 
     def email_list_messages(
-        self, query: str | None = None, max_results: int = 100
+        self, query="in:inbox", max_results: int = 100
     ) -> list[MailMessage]:
         logger.debug("Listing mail messages", query=query, max_results=max_results)
 

@@ -1,9 +1,8 @@
-import json
+import getpass
 import os
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
-import getpass
 
 import chainlit as cl
 from chainlit.oauth_providers import providers as oauth_providers
@@ -15,8 +14,8 @@ from pydantic_ai import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     PartEndEvent,
-    ToolReturnPart,
     RetryPromptPart,
+    ToolReturnPart,
 )
 from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
@@ -77,7 +76,7 @@ def current_date(iana_timezone: str | None = None) -> str:
 
 
 @cl.set_starters
-async def set_starters():
+async def set_starters(user: cl.User | None):
     return [
         cl.Starter(
             label="📅 Today's Calendar",
@@ -193,7 +192,7 @@ async def on_chat_start():
 async def on_message(message: cl.Message):
     user: cl.User = get_user()
 
-    steps = None
+    steps: dict[str, cl.Step] = {}
 
     with logger.contextualize(user_id=user.identifier, message_id=message.id):
         try:
@@ -212,8 +211,6 @@ async def on_message(message: cl.Message):
             stream = agent.run_stream_events(
                 message.content, message_history=message_history
             )
-
-            steps: dict[str, cl.Step] = {}
 
             async for event in stream:
                 logger.trace("Event received", event=event)
@@ -256,9 +253,8 @@ async def on_message(message: cl.Message):
                     await step.__aexit__(None, None, None)
 
         except Exception as e:
-            if steps:
-                for step in steps.values():
-                    await step.__aexit__(type(e), e, e.__traceback__)
+            for step in steps.values():
+                await step.__aexit__(type(e), e, e.__traceback__)
 
             # TODO: Sanitize exceptions
             await cl.Message(f"⚠️ **Error**: {type(e).__name__}: {e}").send()
