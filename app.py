@@ -5,7 +5,6 @@ from zoneinfo import ZoneInfo
 
 import chainlit as cl
 from chainlit.oauth_providers import providers as oauth_providers
-from fastapi import Request, Response
 from loguru import logger
 from pydantic_ai import (
     Agent,
@@ -18,6 +17,7 @@ from pydantic_ai import (
 )
 from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
+from starlette.datastructures import Headers
 
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.logging import json_log_sink
@@ -52,18 +52,17 @@ if google_auth_enabled:
 else:
     logger.debug("Standalone mode")
 
+    @cl.header_auth_callback
+    async def header_auth_callback(headers: Headers) -> cl.User | None:
+        return cl.User(
+            identifier=getpass.getuser(), metadata={"provider": "standalone"}
+        )
+
 
 def get_user() -> cl.User:
-    if google_auth_enabled:
-        return cl.user_session.get("user")
-
-    return cl.User(identifier=getpass.getuser(), metadata={"provider": "standalone"})
-
-
-@cl.on_logout
-async def on_logout(request: Request, response: Response):
-    user = get_user()
-    logger.debug("User logged out", user_id=user)
+    user: cl.User | None = cl.user_session.get("user")
+    assert user
+    return user
 
 
 def current_date(iana_timezone: str | None = None) -> str:
