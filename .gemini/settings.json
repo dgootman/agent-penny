@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/google-gemini/gemini-cli/main/schemas/settings.schema.json",
+  "tools": {
+    "allowed": [
+      "activate_skill",
+      "ReadFileTool",
+      "ShellTool(git diff)",
+      "ShellTool(git status)"
+    ]
+  }
+}
