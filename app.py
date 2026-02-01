@@ -1,7 +1,6 @@
 import getpass
 import os
 from datetime import datetime
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
@@ -19,18 +18,15 @@ from pydantic_ai import (
 )
 from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
-from slugify import slugify
 
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.logging import json_log_sink
 from agent_penny.providers.google import GoogleProvider
+from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
 
 logger.remove()
 logger.add(json_log_sink)
-
-data_dir = Path(os.environ.get("DATA_DIR", "~/.local/share/agent-penny")).expanduser()
-data_dir.mkdir(parents=True, exist_ok=True)
 
 google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 
@@ -97,37 +93,10 @@ async def on_chat_start():
     with logger.contextualize(user_id=user.identifier):
         logger.debug("Chat started")
 
-        user_data_dir = data_dir / slugify(user.identifier)
-        user_data_dir.mkdir(parents=True, exist_ok=True)
+        tools = [current_date]
 
-        memory_file = user_data_dir / "memories.txt"
-        if not memory_file.exists():
-            memory_file.write_text("")
-
-        def load_memory():
-            """Load the agent's persistent memory of key details from past conversations."""
-
-            return memory_file.read_text()
-
-        def save_memory(memory: str):
-            """
-            Persist long-term agent memory that may affect future conversations.
-
-            Workflow:
-            - Always call `load_memory` first.
-            - Merge existing memory with new information.
-            - Resolve conflicts and remove outdated details.
-            - Call `save_memory` with the full merged memory.
-
-            Guidelines:
-            - Retain all relevant information.
-            - This overwrites prior memory; never save partial updates.
-            - Keep memory accurate, consistent, and concise.
-            """
-
-            memory_file.write_text(memory)
-
-        tools = [current_date, load_memory, save_memory]
+        memory = MemoryProvider(user)
+        tools += memory.tools
 
         if google_auth_enabled:
             provider = GoogleProvider(user)
@@ -180,7 +149,7 @@ async def on_chat_start():
             model_settings=model_settings,
             tools=tools,
             system_prompt=[
-                f"You know the following from previous conversations: {load_memory()}"
+                f"You know the following from previous conversations: {memory.load_memory()}"
             ],
         )
         cl.user_session.set("agent", agent)
