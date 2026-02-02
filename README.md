@@ -1,36 +1,35 @@
 # Agent Penny
 
-Agent Penny is a personal AI assistant built with [Chainlit](httpss://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant.
+Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, and a "thinking" mode for select models.
 
 ## Features
 
 ### Core Features
 
-- **Conversational AI**: Engage in natural, context-aware conversations powered by `pydantic-ai`.
-- **Extensible Toolset**: Easily extend the agent's capabilities with custom tools.
-- **User-Specific Persistent Memory**: The agent remembers key details from past conversations for each user, ensuring continuity and personalization.
-- **Multi-LLM Support**: Compatible with various LLM backends, including Google, OpenAI, and Anthropic (via AWS Bedrock).
-- **Conversation Starters**: Pre-defined prompts like "📅 Today's Calendar" and "✉️ Mail Summary" to help you get started.
-- **Structured Logging**: In-depth logging with `loguru` for easier debugging and monitoring.
-- **Container-Ready**: Comes with a `Dockerfile` for easy deployment.
+- **Conversational AI**: Natural, context-aware conversations powered by `pydantic-ai`.
+- **Extensible Toolset**: Add new tools alongside built-ins like current date, memory, and integrations.
+- **User-Specific Persistent Memory**: Per-user memory stored on disk for continuity and personalization.
+- **Multi-LLM Support**: Works with OpenAI, Google, and Bedrock-backed Anthropic models.
+- **Conversation Starters**: Pre-defined prompts like "📅 Today's Calendar" and "✉️ Mail Summary".
+- **Structured Logging**: JSON logging via `loguru` for easier debugging and monitoring.
+- **Container-Ready**: Includes a `Dockerfile` for deployment.
 
 ### Integrations
 
-- **Google**: Securely connect your Google account to:
-  - List your Google Calendars.
-  - Read and create events from your Google Calendar.
-  - List and read your emails from Gmail.
-- **Perplexity**: (Optional) If configured, the agent can use Perplexity for powerful, up-to-date web searches.
+- **Google**: Securely connect your Google account to enhance your assistant with:
+  - **Google Calendar**: List calendars, view events, and add new events.
+  - **Gmail**: Access and summarize emails directly within the chat interface. Automatically converts HTML emails to markdown for better readability.
+- **Perplexity**: (Optional) Integrate with Perplexity AI for web searches.
 
 ### Tools
 
 The agent comes equipped with the following tools:
 
-- **Google Calendar**: `calendar_list`, `calendar_list_events`, and `calendar_add_event` to manage your schedule.
-- **Gmail**: `email_list_messages` to access your emails.
+- **Google Calendar**: `calendar_list`, `calendar_list_events`, and `calendar_add_event`.
+- **Gmail**: `email_list_messages`.
 - **Perplexity**: `perplexity` for web searches (requires API key).
 - **Memory**: `load_memory` and `save_memory` for long-term persistence.
-- **Utility**: `current_date` to get the current date and time.
+- **Utility**: `current_date` for the current date and time.
 
 ## Authentication
 
@@ -42,11 +41,12 @@ The application requests the following scopes:
 - `https://www.googleapis.com/auth/userinfo.email`
 - `https://www.googleapis.com/auth/gmail.readonly`
 - `https://www.googleapis.com/auth/calendar.readonly`
+- `https://www.googleapis.com/auth/calendar.events.owned`
 
 To grant Agent Penny access to your email and calendar, you'll need to set up OAuth.
 
 1. Generate JWT Token for Chainlit using `chainlit create-secret`.
-  - Save the secret as `CHAINLIST_AUTH_SECRET=XXXX` in `.env` or passed to chainlit as an environment variable.
+  - Save the secret as `CHAINLIT_AUTH_SECRET=XXXX` in `.env` or pass it to chainlit as an environment variable.
 2. Set up a client ID and client secret for access to your email and calendar.
   - For Google:
     1. Create a Google Application following [Google Identity Docs](https://developers.google.com/identity/protocols/oauth2). Use the `Web Application` client type. If this is your first Google Application, you'll have to provide some Branding details like App Information as well.
@@ -61,10 +61,10 @@ For other OAuth providers, check out the [Chainlit OAuth docs](http://docs.chain
 
 ### Prerequisites
 
-- uv
 - Python 3.12
-- A Google OAuth Client ID and Secret (see `app.py` for required scopes).
-- An LLM API key (e.g., for Google, OpenAI, or AWS Bedrock).
+- uv (recommended) or another Python environment manager
+- An LLM API key (Google, OpenAI, or AWS Bedrock)
+- A Google OAuth Client ID and Secret (only if using Calendar/Gmail)
 
 ### Installation
 
@@ -74,10 +74,11 @@ For other OAuth providers, check out the [Chainlit OAuth docs](http://docs.chain
     cd agent-penny
     ```
 
-2.  Create a virtual environment and install the Python dependencies:
+2. Create a virtual environment and install the Python dependencies using `uv`:
+
     ```bash
     uv venv
-    uv pip install -r requirements.txt
+    uv sync
     ```
 
 ## Usage
@@ -108,6 +109,7 @@ Agent Penny can be run without Google OAuth for local development or if you do n
     export OPENAI_API_KEY='your-openai-api-key'
     export OAUTH_GOOGLE_CLIENT_ID='your-google-oauth-client-id'
     export OAUTH_GOOGLE_CLIENT_SECRET='your-google-oauth-client-secret'
+    export THINKING='true'
     ```
 
     For other providers and models, refer to the [Pydantic AI Models Documentation](https://ai.pydantic.dev/models/).
@@ -142,14 +144,16 @@ You can also build and run the application using Docker.
 ## Configuration
 
 - `MODEL`: (Required) Specifies the LLM to use. Examples: `openai:gpt-5`, `google-gla:gemini-2.5-pro`, `bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0`.
-- `OAUTH_GOOGLE_CLIENT_ID`: (Required) Your Google OAuth Client ID.
-- `OAUTH_GOOGLE_CLIENT_SECRET`: (Required) Your Google OAuth Client Secret.
+- `OAUTH_GOOGLE_CLIENT_ID`: (Required for Google OAuth) Your Google OAuth Client ID.
+- `OAUTH_GOOGLE_CLIENT_SECRET`: (Required for Google OAuth) Your Google OAuth Client Secret.
 - `PERPLEXITY_API_KEY`: (Optional) Your Perplexity AI API key. If provided, enables the `perplexity` tool.
+- `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. This only supports OpenAI and AWS Bedrock Anthropic models for now. Defaults to `false`.
 - `LOGURU_LEVEL`: (Optional) Sets the logging level. Defaults to `DEBUG`. Set to `TRACE` for verbose event logging.
 - `DATA_DIR`: (Optional) Specifies the directory to store agent data, such as memories. Defaults to `~/.local/share/agent-penny`.
 
 ## Built With
 
-- [Chainlit](httpss://docs.chainlit.io/): For the web UI and chat interface.
-- [pydantic-ai](httpss://github.com/vLLM-project/pydantic-ai): For the agent and LLM interaction.
-- [Loguru](httpss://loguru.readthedocs.io/): For logging.
+- [Chainlit](https://docs.chainlit.io/): For the web UI and chat interface.
+- [pydantic-ai](https://github.com/vLLM-project/pydantic-ai): For the agent and LLM interaction.
+- [MarkItDown](https://github.com/microsoft/markitdown): For converting HTML emails to text.
+- [Loguru](https://loguru.readthedocs.io/): For logging.
