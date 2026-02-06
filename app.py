@@ -1,16 +1,27 @@
 import getpass
 import os
+from base64 import b64encode
 from datetime import datetime
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
 from chainlit.oauth_providers import providers as oauth_providers
+from elevenlabs import (
+    AsyncElevenLabs,
+    AudioFormat,
+    CommitStrategy,
+    RealtimeAudioOptions,
+    RealtimeConnection,
+    RealtimeEvents,
+)
 from loguru import logger
 from pydantic_ai import (
     Agent,
     AgentRunResultEvent,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
+    ModelMessage,
     PartEndEvent,
     RetryPromptPart,
     ToolReturnPart,
@@ -157,7 +168,7 @@ async def on_chat_start():
 @cl.on_message
 @logger.catch
 async def on_message(message: cl.Message):
-    user: cl.User = get_user()
+    user = get_user()
 
     steps: dict[str, cl.Step] = {}
 
@@ -226,3 +237,109 @@ async def on_message(message: cl.Message):
             # TODO: Sanitize exceptions
             await cl.Message(f"⚠️ **Error**: {type(e).__name__}: {e}").send()
             raise e
+
+
+if "ELEVENLABS_API_KEY" in os.environ:
+
+    @cl.on_audio_start
+    async def on_audio_start():
+        user = get_user()
+
+        with logger.contextualize(user_id=user.identifier):
+            logger.debug("Audio started")
+
+            # Initialize the ElevenLabs client
+            elevenlabs = AsyncElevenLabs(api_key=os.environ["ELEVENLABS_API_KEY"])
+
+            # Connect with manual audio chunk mode
+            connection: RealtimeConnection = (
+                await elevenlabs.speech_to_text.realtime.connect(
+                    RealtimeAudioOptions(
+                        model_id="scribe_v2_realtime",
+                        language_code="en",
+                        audio_format=AudioFormat.PCM_24000,
+                        sample_rate=24000,
+                        commit_strategy=CommitStrategy.VAD,
+                        include_timestamps=True,
+                    )
+                )
+            )
+
+            async def on_committed_transcript_async(data):
+                transcript: str = data["text"]
+                logger.debug("Audio transcript committed", transcript=transcript)
+
+                if transcript.strip():
+                    if cl.user_session.get("track_id"):
+                        # Interrupt the previous audio response
+                        await cl.context.emitter.send_audio_interrupt()
+                        cl.user_session.set("track_id", None)
+
+                    message = cl.Message(type="user_message", content=transcript)
+
+                    await message.send()
+                    await on_message(message)
+
+                    message_history: list[ModelMessage] = cl.user_session.get(
+                        "message_history"
+                    )
+                    last_message = message_history[-1]
+                    content = "\n".join(
+                        p.content for p in last_message.parts if p.part_kind == "text"
+                    )
+
+                    audio = elevenlabs.text_to_speech.stream(
+                        voice_id="hpp4J3VqNfWAUOO0d1Us",
+                        text=content,
+                        language_code="en",
+                        output_format="pcm_24000",
+                        model_id="eleven_turbo_v2_5",  # use the turbo model for low latency
+                    )
+
+                    cl.user_session.set("track_id", str(uuid4()))
+                    async for chunk in audio:
+                        await cl.context.emitter.send_audio_chunk(
+                            cl.OutputAudioChunk(
+                                mimeType="pcm16",
+                                data=chunk,
+                                track=cl.user_session.get("track_id"),
+                            )
+                        )
+
+            # Set up event handlers
+            @logger.catch
+            def on_committed_transcript(data):
+                return cl.context.loop.run_until_complete(
+                    on_committed_transcript_async(data)
+                )
+
+            def on_error(error):
+                logger.error("Audio error", error=error)
+
+            def on_close():
+                logger.info("Audio Connection closed")
+
+            # Register event handlers
+            connection.on(RealtimeEvents.COMMITTED_TRANSCRIPT, on_committed_transcript)
+            connection.on(RealtimeEvents.ERROR, on_error)
+            connection.on(RealtimeEvents.CLOSE, on_close)
+
+            cl.user_session.set("connection", connection)
+            return True
+
+    @cl.on_audio_chunk
+    async def on_audio_chunk(chunk: cl.InputAudioChunk):
+        connection: RealtimeConnection = cl.user_session.get("connection")
+        await connection.send(
+            {"audio_base_64": b64encode(chunk.data).decode(), "sample_rate": 24000}
+        )
+
+    @cl.on_audio_end
+    async def on_audio_end():
+        user = get_user()
+
+        with logger.contextualize(user_id=user.identifier):
+            logger.debug("Audio ended")
+
+            connection: RealtimeConnection = cl.user_session.get("connection")
+            await connection.close()
