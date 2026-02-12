@@ -31,6 +31,7 @@ from pydantic_ai import (
     ToolReturnPart,
 )
 from pydantic_ai.models.bedrock import BedrockModelSettings
+from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 from starlette.datastructures import Headers
 
@@ -126,6 +127,10 @@ def agent_config(
             model_settings = OpenAIResponsesModelSettings(
                 openai_reasoning_effort="low",
                 openai_reasoning_summary="detailed",
+            )
+        elif llm_provider == "google-gla":
+            model_settings = GoogleModelSettings(
+                google_thinking_config={"include_thoughts": True}
             )
         elif llm_provider == "bedrock":
             if model_id.startswith("us.anthropic."):
