@@ -7,6 +7,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
+from chainlit.config import config as cl_config
 from chainlit.input_widget import InputWidget, Select, Switch
 from chainlit.oauth_providers import providers as oauth_providers
 from elevenlabs import (
@@ -326,6 +327,7 @@ async def on_message(message: cl.Message):
 
 
 if "ELEVENLABS_API_KEY" in os.environ:
+    cl_config.features.audio.enabled = True
 
     @cl.on_audio_start
     async def on_audio_start():

@@ -66,7 +66,7 @@ reaction_on_message_received = false
 
 [features.audio]
     # Enable audio features
-    enabled = true
+    enabled = false
     # Sample rate of the audio
     sample_rate = 24000
 
