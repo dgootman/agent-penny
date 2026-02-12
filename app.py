@@ -153,15 +153,27 @@ async def on_chat_start():
     with logger.contextualize(user_id=user.identifier):
         logger.debug("Chat started")
 
-        llm_provider = default_model.split(":", 1)[0]
-
         available_models_by_provider = {
-            "openai": [
+            "bedrock": [  # https://platform.claude.com/docs/en/about-claude/models/overview
+                "bedrock:us.anthropic.claude-opus-4-6-v1",
+                "bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
+            ],
+            "openai": [  # https://developers.openai.com/api/docs/models
                 "openai:gpt-5.2",
                 "openai:gpt-5-mini",
                 "openai:gpt-5-nano",
-            ]
+            ],
+            "google-gla": [  # https://ai.google.dev/gemini-api/docs/models
+                "google-gla:gemini-3-pro-preview",
+                "google-gla:gemini-3-flash-preview",
+                "google-gla:gemini-2.5-pro",
+                "google-gla:gemini-2.5-flash",
+                "google-gla:gemini-2.5-flash-lite",
+            ],
         }
+
+        llm_provider = default_model.split(":", 1)[0]
 
         setting_inputs: list[InputWidget] = []
 
