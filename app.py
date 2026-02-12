@@ -2,10 +2,12 @@ import getpass
 import os
 from base64 import b64encode
 from datetime import datetime
+from typing import Any, TypedDict
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
+from chainlit.input_widget import InputWidget, Select, Switch
 from chainlit.oauth_providers import providers as oauth_providers
 from elevenlabs import (
     AsyncElevenLabs,
@@ -22,6 +24,7 @@ from pydantic_ai import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     ModelMessage,
+    ModelSettings,
     PartEndEvent,
     RetryPromptPart,
     ToolReturnPart,
@@ -39,6 +42,8 @@ from agent_penny.tools.perplexity import perplexity
 logger.remove()
 logger.add(json_log_sink)
 
+default_model = os.environ["MODEL"]
+default_thinking = os.environ.get("THINKING") == "true"
 google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 
 if google_auth_enabled:
@@ -96,12 +101,93 @@ async def set_starters(user: cl.User | None):
     ]
 
 
+class AgentConfig(TypedDict):
+    model: str
+    model_settings: ModelSettings | None
+
+
+def agent_config(
+    model: str | None = None,
+    thinking: bool | None = None,
+) -> AgentConfig:
+    model = model or default_model
+    thinking = thinking if thinking is not None else default_thinking
+
+    model_settings: ModelSettings | None = None
+
+    if thinking:
+        # See: https://ai.pydantic.dev/thinking/
+        # TODO: Make model settings for thinking configurable
+        llm_provider, model_id = model.split(":", 1)
+        if llm_provider == "openai":
+            # Upgrade to the OpenAI Responses API: https://platform.openai.com/docs/guides/migrate-to-responses
+            model = f"openai-responses:{model_id}"
+            model_settings = OpenAIResponsesModelSettings(
+                openai_reasoning_effort="low",
+                openai_reasoning_summary="detailed",
+            )
+        elif llm_provider == "bedrock":
+            if model_id.startswith("us.anthropic."):
+                model_settings = BedrockModelSettings(
+                    bedrock_additional_model_requests_fields={
+                        "thinking": {"type": "enabled", "budget_tokens": 4000}
+                    }
+                )
+            else:
+                raise ValueError(
+                    f"Thinking is not supported for Bedrock model: {model_id}"
+                )
+        else:
+            raise ValueError(f"Thinking is not supported for provider: {llm_provider}")
+
+    return {
+        "model": model,
+        "model_settings": model_settings,
+    }
+
+
 @cl.on_chat_start
 async def on_chat_start():
     user = get_user()
 
     with logger.contextualize(user_id=user.identifier):
         logger.debug("Chat started")
+
+        llm_provider = default_model.split(":", 1)[0]
+
+        available_models_by_provider = {
+            "openai": [
+                "openai:gpt-5.2",
+                "openai:gpt-5-mini",
+                "openai:gpt-5-nano",
+            ]
+        }
+
+        setting_inputs: list[InputWidget] = []
+
+        available_models = available_models_by_provider.get(llm_provider, [])
+        if available_models:
+            if default_model not in available_models:
+                available_models.append(default_model)
+
+            setting_inputs.append(
+                Select(
+                    id="model",
+                    label="Model",
+                    values=available_models,
+                    initial_index=available_models.index(default_model),
+                )
+            )
+
+        setting_inputs.append(
+            Switch(
+                id="thinking",
+                label="Thinking",
+                initial=default_thinking,
+            )
+        )
+
+        await cl.ChatSettings(setting_inputs).send()
 
         tools = [current_date]
 
@@ -115,48 +201,16 @@ async def on_chat_start():
         if "PERPLEXITY_API_KEY" in os.environ:
             tools.append(perplexity)
 
-        model = os.environ["MODEL"]
-        thinking = os.environ.get("THINKING") == "true"
-        model_settings = None
-
-        if thinking:
-            # See: https://ai.pydantic.dev/thinking/
-            # TODO: Make model settings for thinking configurable
-            llm_provider, model_id = model.split(":", 1)
-            if llm_provider == "openai":
-                # Upgrade to the OpenAI Responses API: https://platform.openai.com/docs/guides/migrate-to-responses
-                model = f"openai-responses:{model_id}"
-                model_settings = OpenAIResponsesModelSettings(
-                    openai_reasoning_effort="low",
-                    openai_reasoning_summary="detailed",
-                )
-            elif llm_provider == "bedrock":
-                if model_id.startswith("us.anthropic."):
-                    model_settings = BedrockModelSettings(
-                        bedrock_additional_model_requests_fields={
-                            "thinking": {"type": "enabled", "budget_tokens": 4000}
-                        }
-                    )
-                else:
-                    raise ValueError(
-                        f"Thinking is not supported for Bedrock model: {model_id}"
-                    )
-            else:
-                raise ValueError(
-                    f"Thinking is not supported for provider: {llm_provider}"
-                )
+        config = agent_config()
 
         logger.debug(
             "Creating agent",
-            model=model,
-            model_settings=model_settings,
-            thinking=thinking,
+            **config,
             tools=[str(t) for t in tools],
         )
 
         agent = Agent(
-            model,
-            model_settings=model_settings,
+            **config,
             tools=tools,
             system_prompt=[
                 f"You know the following from previous conversations: {memory.load_memory()}"
@@ -169,10 +223,13 @@ async def on_chat_start():
 @logger.catch
 async def on_message(message: cl.Message):
     user = get_user()
+    chat_settings: dict[str, Any] | None = cl.user_session.get("chat_settings")
 
     steps: dict[str, cl.Step] = {}
 
-    with logger.contextualize(user_id=user.identifier, message_id=message.id):
+    with logger.contextualize(
+        user_id=user.identifier, message_id=message.id, chat_settings=chat_settings
+    ):
         try:
             logger.debug("Message received")
 
@@ -186,9 +243,26 @@ async def on_message(message: cl.Message):
                 message_history=message_history,
             )
 
-            stream = agent.run_stream_events(
-                message.content, message_history=message_history
-            )
+            if chat_settings and (
+                ("model" in chat_settings and chat_settings["model"] != default_model)
+                or (
+                    "thinking" in chat_settings
+                    and chat_settings["thinking"] != default_thinking
+                )
+            ):
+                config = agent_config(
+                    chat_settings.get("model"), chat_settings.get("thinking")
+                )
+                stream = agent.run_stream_events(
+                    message.content,
+                    message_history=message_history,
+                    **config,
+                )
+            else:
+                stream = agent.run_stream_events(
+                    message.content,
+                    message_history=message_history,
+                )
 
             async for event in stream:
                 logger.trace("Event received", event=event)
