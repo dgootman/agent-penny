@@ -8,11 +8,18 @@ WORKDIR /app
 # Omit development dependencies
 ENV UV_NO_DEV=1
 
-# Install dependencies
+# Install binary dependencies
+# ffmpeg is required by torchcodec, which is used by silero_vad to decode audio
+RUN apt update && apt install -y ffmpeg && apt clean
+
+# Install Python dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project
+
+# Download Whisper model
+RUN echo 'from faster_whisper import WhisperModel; WhisperModel("small.en", device="cpu", compute_type="int8")' | uv run -
 
 # Copy the project into the image
 COPY pyproject.toml uv.lock ./

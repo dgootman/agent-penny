@@ -6,13 +6,18 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "chainlit>=2.9.6",
-    "elevenlabs>=2.34.0",
+    "faster-whisper>=1.2.1",
     "google-api-python-client>=2.188.0",
     "loguru>=0.7.3",
     "markitdown>=0.1.4",
     "perplexityai>=0.26.0",
     "pydantic-ai-slim[bedrock,google,openai]>=1.47.0",
     "python-slugify>=8.0.4",
+    "silero-vad>=6.2.0",
+    "torch>=2.10.0",
+    "torchaudio>=2.10.0",
+    "torchcodec>=0.10.0",
+    "ua-parser>=1.0.1",
 ]
 
 [dependency-groups]
@@ -21,3 +26,16 @@ dev = [
     "mypy>=1.19.1",
     "ruff>=0.14.14",
 ]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]
+torchaudio = [
+    { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

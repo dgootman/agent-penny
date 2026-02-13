@@ -1,15 +1,16 @@
 # Agent Penny
 
-Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, and a "thinking" mode for select models.
+Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, optional web search via Perplexity, and a configurable "thinking" mode for select models.
 
 ## Features
 
 ### Core Features
 
 - **Conversational AI**: Natural, context-aware conversations powered by `pydantic-ai`.
+- **Voice Interaction**: Real-time speech-to-text using `faster-whisper`.
 - **Extensible Toolset**: Add new tools alongside built-ins like current date, memory, and integrations.
 - **User-Specific Persistent Memory**: Per-user memory stored on disk for continuity and personalization.
-- **Multi-LLM Support**: Works with OpenAI, Google, and Bedrock-backed Anthropic models.
+- **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5), Google (Gemini 3), and Bedrock-backed Anthropic models.
 - **Conversation Starters**: Pre-defined prompts like "📅 Today's Calendar" and "✉️ Mail Summary".
 - **Structured Logging**: JSON logging via `loguru` for easier debugging and monitoring.
 - **Container-Ready**: Includes a `Dockerfile` for deployment.
@@ -33,7 +34,7 @@ The agent comes equipped with the following tools:
 
 ## Authentication
 
-Agent Penny uses Google OAuth for user authentication. When you first log in, you will be asked to grant permission for the application to access your Google Calendar and Gmail in read-only mode. This is a secure process that allows the agent to work with your data without storing your credentials.
+Agent Penny uses Google OAuth for user authentication only when you provide Google OAuth credentials. When enabled, you will be asked to grant permission for the application to access your Google Calendar and Gmail. This is a secure process that allows the agent to work with your data without storing your credentials. If Google OAuth is not configured, the app runs in standalone mode and identifies you by your system username.
 
 The application requests the following scopes:
 
@@ -97,18 +98,21 @@ Agent Penny can be run without Google OAuth for local development or if you do n
 
     **For Google Gemini:**
     ```bash
-    export MODEL='google-gla:gemini-2.5-pro'
+    export MODEL='google-gla:gemini-3-flash-preview' # or google-gla:gemini-3-pro-preview
     export GOOGLE_API_KEY='your-google-api-key'
     export OAUTH_GOOGLE_CLIENT_ID='your-google-oauth-client-id'
     export OAUTH_GOOGLE_CLIENT_SECRET='your-google-oauth-client-secret'
+    # Optional: Enable thinking mode
+    export THINKING='true'
     ```
 
     **For OpenAI:**
     ```bash
-    export MODEL='openai:gpt-5'
+    export MODEL='openai:gpt-5.2' # or openai:gpt-5-mini, openai:gpt-5-nano
     export OPENAI_API_KEY='your-openai-api-key'
     export OAUTH_GOOGLE_CLIENT_ID='your-google-oauth-client-id'
     export OAUTH_GOOGLE_CLIENT_SECRET='your-google-oauth-client-secret'
+    # Optional: Enable thinking mode
     export THINKING='true'
     ```
 
@@ -143,11 +147,12 @@ You can also build and run the application using Docker.
 
 ## Configuration
 
-- `MODEL`: (Required) Specifies the LLM to use. Examples: `openai:gpt-5`, `google-gla:gemini-2.5-pro`, `bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0`.
-- `OAUTH_GOOGLE_CLIENT_ID`: (Required for Google OAuth) Your Google OAuth Client ID.
-- `OAUTH_GOOGLE_CLIENT_SECRET`: (Required for Google OAuth) Your Google OAuth Client Secret.
+- `MODEL`: (Required) Specifies the LLM to use. Examples: `openai:gpt-5.2`, `openai:gpt-5-mini`, `google-gla:gemini-3-pro-preview`, `google-gla:gemini-3-flash-preview`, `bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0`.
+- `OAUTH_GOOGLE_CLIENT_ID`: (Optional) Your Google OAuth Client ID. Required for Google Calendar and Gmail integration.
+- `OAUTH_GOOGLE_CLIENT_SECRET`: (Optional) Your Google OAuth Client Secret. Required for Google Calendar and Gmail integration.
 - `PERPLEXITY_API_KEY`: (Optional) Your Perplexity AI API key. If provided, enables the `perplexity` tool.
-- `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. This only supports OpenAI and AWS Bedrock Anthropic models for now. Defaults to `false`.
+- `WHISPER_MODEL`: (Optional) The Whisper model size (e.g., `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en`, `medium`, `medium.en`, `large-v1`, `large-v2`, `large-v3`). If set, enables voice interaction (speech-to-text).
+- `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. Defaults to `false`.
 - `LOGURU_LEVEL`: (Optional) Sets the logging level. Defaults to `DEBUG`. Set to `TRACE` for verbose event logging.
 - `DATA_DIR`: (Optional) Specifies the directory to store agent data, such as memories. Defaults to `~/.local/share/agent-penny`.
 
@@ -157,3 +162,4 @@ You can also build and run the application using Docker.
 - [pydantic-ai](https://github.com/vLLM-project/pydantic-ai): For the agent and LLM interaction.
 - [MarkItDown](https://github.com/microsoft/markitdown): For converting HTML emails to text.
 - [Loguru](https://loguru.readthedocs.io/): For logging.
+- [Faster Whisper](https://github.com/SYSTRAN/faster-whisper): For speech-to-text.
