@@ -1,10 +1,13 @@
-.PHONY: release build review readme
+.PHONY: release build review readme sync
 
 release: build readme
 
-build:
-	ruff check
-	mypy app.py agent_penny
+sync:
+	uv sync
+
+build: sync
+	uv run ruff check
+	uv run mypy app.py agent_penny
 
 review:
 	gemini -p "Review the staged changes using the code-reviewer skill"
