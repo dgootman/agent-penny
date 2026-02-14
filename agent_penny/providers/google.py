@@ -241,11 +241,11 @@ class GoogleProvider:
             if text_part:
                 cte = text_part.get("content-transfer-encoding")
                 if cte in ["quoted-printable", "base64"]:
-                    return text_part.get_payload(decode=True).decode()
+                    return text_part.get_payload(decode=True).decode()  # type: ignore[union-attr]
                 payload = text_part.get_payload()
                 if isinstance(payload, str):
                     return payload
-                return text_part.get_payload(decode=True).decode()
+                return text_part.get_payload(decode=True).decode()  # type: ignore[union-attr]
 
             html_part = next(
                 (p for p in payloads if p.get_content_type() == "text/html"),
@@ -253,7 +253,7 @@ class GoogleProvider:
             )
             if html_part:
                 return md.convert_stream(
-                    BytesIO(html_part.get_payload(decode=True))
+                    BytesIO(html_part.get_payload(decode=True))  # type: ignore[arg-type]
                 ).text_content
 
             raise ValueError(

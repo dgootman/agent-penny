@@ -199,10 +199,8 @@ async def on_chat_start():
 
         await cl.ChatSettings(setting_inputs).send()
 
-        tools = [current_date]
-
         memory = MemoryProvider(user)
-        tools += memory.tools
+        tools = [current_date, *memory.tools]
 
         if google_auth_enabled:
             provider = GoogleProvider(user)
@@ -221,7 +219,7 @@ async def on_chat_start():
 
         agent = Agent(
             **config,
-            tools=tools,
+            tools=tools,  # type: ignore[arg-type]
             system_prompt=[
                 f"You know the following from previous conversations: {memory.load_memory()}"
             ],
