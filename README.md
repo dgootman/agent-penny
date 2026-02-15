@@ -7,7 +7,7 @@ Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainl
 ### Core Features
 
 - **Conversational AI**: Natural, context-aware conversations powered by `pydantic-ai`.
-- **Voice Interaction**: Real-time speech-to-text using `faster-whisper`.
+- **Voice Interaction**: Real-time speech-to-text using `faster-whisper` and high-quality text-to-speech using `kokoro`.
 - **Extensible Toolset**: Add new tools alongside built-ins like current date, memory, and integrations.
 - **User-Specific Persistent Memory**: Per-user memory stored on disk for continuity and personalization.
 - **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5), Google (Gemini 3), and Bedrock-backed Anthropic models.
@@ -167,3 +167,4 @@ You can also build and run the application using Docker.
 - [Loguru](https://loguru.readthedocs.io/): For logging.
 - [Logfire](https://pydantic.dev/logfire): For observability.
 - [Faster Whisper](https://github.com/SYSTRAN/faster-whisper): For speech-to-text.
+- [Kokoro](https://github.com/skunkworksai/kokoro): For text-to-speech.
