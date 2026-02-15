@@ -6,8 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "chainlit>=2.9.6",
+    "en-core-web-sm",
     "faster-whisper>=1.2.1",
     "google-api-python-client>=2.188.0",
+    "kokoro>=0.9.4",
     "loguru>=0.7.3",
     "markitdown>=0.1.4",
     "perplexityai>=0.26.0",
@@ -31,12 +33,9 @@ dev = [
 check_untyped_defs = true
 
 [tool.uv.sources]
-torch = [
-    { index = "pytorch-cpu" },
-]
-torchaudio = [
-    { index = "pytorch-cpu" },
-]
+torch = [{ index = "pytorch-cpu" }]
+torchaudio = [{ index = "pytorch-cpu" }]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

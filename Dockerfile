@@ -18,8 +18,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project
 
-# Download Whisper model
+# Download Whisper model for speech-to-text
 RUN echo 'from faster_whisper import WhisperModel; WhisperModel("small.en", device="cpu", compute_type="int8")' | uv run -
+
+# Download Kokoro model for text-to-speech
+RUN echo 'from kokoro import KPipeline; KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")' | uv run -
 
 # Copy the project into the image
 COPY pyproject.toml uv.lock ./

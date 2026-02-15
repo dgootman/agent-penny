@@ -2,6 +2,7 @@ import getpass
 import os
 from datetime import datetime
 from typing import Any, TypedDict
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
@@ -14,6 +15,7 @@ from pydantic_ai import (
     AgentRunResultEvent,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
+    ModelMessage,
     ModelSettings,
     PartEndEvent,
     RetryPromptPart,
@@ -26,7 +28,7 @@ from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
 
 from agent_penny import audio
-from agent_penny.audio import StreamingTranscriber
+from agent_penny.audio import StreamingTranscriber, text_to_speech
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.logging import json_log_sink
 from agent_penny.providers.google import GoogleProvider
@@ -326,8 +328,9 @@ if "WHISPER_MODEL" in os.environ:
 
     cl_config.features.audio.enabled = True
 
-    # Prime the Whisper Model cache
+    # Prime the audio model caches
     audio.whisper_model()
+    audio.kokoro_model()
 
     @cl.on_audio_start
     async def on_audio_start():
@@ -352,6 +355,23 @@ if "WHISPER_MODEL" in os.environ:
 
         await message.send()
         await on_message(message)
+
+        message_history: list[ModelMessage] = cl.user_session.get("message_history", [])
+        last_message = message_history[-1]
+
+        if last_message.kind == "response" and last_message.text:
+            track_id = str(uuid4())
+            cl.user_session.set("track_id", str(track_id))
+
+            speech = text_to_speech(last_message.text)
+            for chunk in speech:
+                await cl.context.emitter.send_audio_chunk(
+                    cl.OutputAudioChunk(
+                        mimeType="pcm16",
+                        data=chunk,
+                        track=track_id,
+                    )
+                )
 
     @cl.on_audio_chunk
     async def on_audio_chunk(chunk: cl.InputAudioChunk):
