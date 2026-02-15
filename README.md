@@ -167,4 +167,4 @@ You can also build and run the application using Docker.
 - [Loguru](https://loguru.readthedocs.io/): For logging.
 - [Logfire](https://pydantic.dev/logfire): For observability.
 - [Faster Whisper](https://github.com/SYSTRAN/faster-whisper): For speech-to-text.
-- [Kokoro](https://github.com/skunkworksai/kokoro): For text-to-speech.
+- [Kokoro](https://github.com/hexgrad/kokoro): For text-to-speech.
