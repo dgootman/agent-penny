@@ -93,7 +93,7 @@ text_to_speech_resample = Resample(24000, 16000)
 
 def text_to_speech(text: str):
     pipeline = kokoro_model()
-    generator = pipeline(text, voice="af_heart")
+    generator = pipeline(text, voice="af_heart", speed=1.25)
 
     for gs, ps, audio in generator:
         # Convert the audio tensor from 24000HZ to 16000HZ
