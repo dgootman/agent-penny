@@ -5,6 +5,7 @@ import wave
 from functools import cache
 from io import BytesIO
 
+import logfire
 import torch
 import torchaudio  # type: ignore[import-untyped]
 from faster_whisper import WhisperModel  # type: ignore[import-untyped]
@@ -16,11 +17,13 @@ from torchcodec.encoders import AudioEncoder  # type: ignore[import-untyped]
 
 
 @cache
+@logfire.instrument()
 def whisper_model() -> WhisperModel:
     return WhisperModel(os.environ["WHISPER_MODEL"], device="cpu", compute_type="int8")
 
 
 @cache
+@logfire.instrument()
 def kokoro_model() -> KPipeline:
     return KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")
 
@@ -62,9 +65,12 @@ class StreamingTranscriber:
         if triggered:
             self.buffer.write(chunk)
             return None
-        else:
+        elif self.buffer.tell() > 0:
             return await self.transcribe()
+        else:
+            return None
 
+    @logfire.instrument()
     async def transcribe(self) -> str | None:
         if self.buffer.tell() == 0:
             return None
@@ -74,13 +80,16 @@ class StreamingTranscriber:
 
         wave_data = self.pcm_to_wave(pcm)
 
-        segments, info = await asyncio.get_running_loop().run_in_executor(
-            None,
-            lambda: whisper_model().transcribe(
-                BytesIO(wave_data), language="en", word_timestamps=False
-            ),
-        )
-        segments = list(segments)
+        with logfire.span("whisper_transcribe"):
+            segments, info = await asyncio.to_thread(
+                lambda: whisper_model().transcribe(
+                    BytesIO(wave_data), language="en", word_timestamps=False
+                )
+            )
+
+        with logfire.span("collect_segments"):
+            segments = await asyncio.to_thread(lambda: list(segments))
+
         text = "\n".join(s.text for s in segments)
 
         logger.trace("Transcription", info=info, segments=segments, text=text)

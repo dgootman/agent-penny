@@ -6,6 +6,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
+import logfire
 from chainlit.config import config as cl_config
 from chainlit.input_widget import InputWidget, Select, Switch
 from chainlit.oauth_providers import providers as oauth_providers
@@ -37,6 +38,14 @@ from agent_penny.tools.perplexity import perplexity
 
 logger.remove()
 logger.add(json_log_sink)
+
+logfire.configure(
+    service_name=os.environ.get("OTEL_SERVICE_NAME", "agent-penny"),
+    # Do not send traces to logfire by default
+    send_to_logfire=os.environ.get("LOGFIRE_SEND_TO_LOGFIRE") == "true"
+)
+logfire.instrument_pydantic_ai()
+logfire.instrument_httpx()
 
 default_model = os.environ["MODEL"]
 default_thinking = os.environ.get("THINKING") == "true"
@@ -147,6 +156,7 @@ def agent_config(
 
 
 @cl.on_chat_start
+@logfire.instrument()
 async def on_chat_start():
     user = get_user()
 
@@ -231,6 +241,7 @@ async def on_chat_start():
 
 @cl.on_message
 @logger.catch
+@logfire.instrument()
 async def on_message(message: cl.Message):
     user = get_user()
     chat_settings: dict[str, Any] | None = cl.user_session.get("chat_settings")
@@ -329,10 +340,12 @@ if "WHISPER_MODEL" in os.environ:
     cl_config.features.audio.enabled = True
 
     # Prime the audio model caches
-    audio.whisper_model()
-    audio.kokoro_model()
+    with logfire.span("cache_startup"):
+        audio.whisper_model()
+        audio.kokoro_model()
 
     @cl.on_audio_start
+    @logfire.instrument()
     async def on_audio_start():
         user = get_user()
 
@@ -350,6 +363,7 @@ if "WHISPER_MODEL" in os.environ:
 
             return True
 
+    @logfire.instrument()
     async def on_transcription(text: str) -> None:
         message = cl.Message(type="user_message", content=text)
 
@@ -386,6 +400,7 @@ if "WHISPER_MODEL" in os.environ:
                 await on_transcription(text)
 
     @cl.on_audio_end
+    @logfire.instrument()
     async def on_audio_end():
         user = get_user()
 

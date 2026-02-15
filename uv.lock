@@ -29,6 +29,7 @@ dependencies = [
     { name = "faster-whisper" },
     { name = "google-api-python-client" },
     { name = "kokoro" },
+    { name = "logfire", extra = ["httpx"] },
     { name = "loguru" },
     { name = "markitdown" },
     { name = "perplexityai" },
@@ -57,6 +58,7 @@ requires-dist = [
     { name = "faster-whisper", specifier = ">=1.2.1" },
     { name = "google-api-python-client", specifier = ">=2.188.0" },
     { name = "kokoro", specifier = ">=0.9.4" },
+    { name = "logfire", extras = ["httpx"], specifier = ">=4.24.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "markitdown", specifier = ">=0.1.4" },
     { name = "perplexityai", specifier = ">=0.26.0" },
@@ -967,6 +969,15 @@ wheels = [
 ]
 
 [[package]]
+name = "executing"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cc/28/c14e053b6762b1044f34a13aab6859bbf40456d37d23aa286ac24cfd9a5d/executing-2.2.1.tar.gz", hash = "sha256:3632cc370565f6648cc328b32435bd120a1e4ebb20c77e3fdde9a13cd1e533c4", size = 1129488, upload-time = "2025-09-01T09:48:10.866Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/ea/53f2148663b321f21b5a606bd5f191517cf40b7072c0497d3c92c4a13b1e/executing-2.2.1-py2.py3-none-any.whl", hash = "sha256:760643d3452b4d777d295bb167ccc74c64a81df23fb5e08eff250c425a4b2017", size = 28317, upload-time = "2025-09-01T09:48:08.5Z" },
+]
+
+[[package]]
 name = "fastapi"
 version = "0.128.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1683,6 +1694,29 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7e/c1/7bd34ad0ae6cfd99512f8a40b28b9624c3b1f4e1d40c9038eabc2f870b15/literalai-0.1.201.tar.gz", hash = "sha256:29e4ccadd9d68bfea319a7f0b4fc32611b081990d9195f98e5e97a14d24d3713", size = 67832, upload-time = "2025-03-24T10:01:51.559Z" }
 
 [[package]]
+name = "logfire"
+version = "4.24.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "executing" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-sdk" },
+    { name = "protobuf" },
+    { name = "rich" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/a7/665905d902d42a7ded189eb3ac6371ae5cf73a8eb1725c184edb832915ea/logfire-4.24.0.tar.gz", hash = "sha256:ac480040bbbe854a2f1b0bee6eebc33a2144039a95025d2c5169b4d354bf6fdc", size = 755167, upload-time = "2026-02-13T20:46:45.011Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/7e/3dd4ae5192c05db7879657845c4da069096373a191e08a7df09411ca3f6f/logfire-4.24.0-py3-none-any.whl", hash = "sha256:cd72241770e5fde285cf068936416389360d89e2eb432a7430d4465a79d8123c", size = 290918, upload-time = "2026-02-13T20:46:40.624Z" },
+]
+
+[package.optional-dependencies]
+httpx = [
+    { name = "opentelemetry-instrumentation-httpx" },
+]
+
+[[package]]
 name = "logfire-api"
 version = "4.19.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1720,6 +1754,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/25/8f/132b0d7cd51c02c39fd52658a5896276c30c8cc2fd453270b19db8c40f7e/magika-0.6.3-py3-none-macosx_11_0_arm64.whl", hash = "sha256:86901e64b05dde5faff408c9b8245495b2e1fd4c226e3393d3d2a3fee65c504b", size = 13358841, upload-time = "2025-10-30T15:22:27.413Z" },
     { url = "https://files.pythonhosted.org/packages/c4/03/5ed859be502903a68b7b393b17ae0283bf34195cfcca79ce2dc25b9290e7/magika-0.6.3-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:3d9661eedbdf445ac9567e97e7ceefb93545d77a6a32858139ea966b5806fb64", size = 15367335, upload-time = "2025-10-30T15:22:29.907Z" },
     { url = "https://files.pythonhosted.org/packages/7b/9e/f8ee7d644affa3b80efdd623a3d75865c8f058f3950cb87fb0c48e3559bc/magika-0.6.3-py3-none-win_amd64.whl", hash = "sha256:e57f75674447b20cab4db928ae58ab264d7d8582b55183a0b876711c2b2787f3", size = 12692831, upload-time = "2025-10-30T15:22:32.063Z" },
+]
+
+[[package]]
+name = "markdown-it-py"
+version = "4.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mdurl" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5b/f5/4ec618ed16cc4f8fb3b701563655a69816155e79e24a17b651541804721d/markdown_it_py-4.0.0.tar.gz", hash = "sha256:cb0a2b4aa34f932c007117b194e945bd74e0ec24133ceb5bac59009cda1cb9f3", size = 73070, upload-time = "2025-08-11T12:57:52.854Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/54/e7d793b573f298e1c9013b8c4dade17d481164aa517d1d7148619c2cedbf/markdown_it_py-4.0.0-py3-none-any.whl", hash = "sha256:87327c59b172c5011896038353a81343b6754500a08cd7a4973bb48c6d578147", size = 87321, upload-time = "2025-08-11T12:57:51.923Z" },
 ]
 
 [[package]]
@@ -1851,6 +1897,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d5/2d/649d80a0ecf6a1f82632ca44bec21c0461a9d9fc8934d38cb5b319f2db5e/mcp-1.25.0.tar.gz", hash = "sha256:56310361ebf0364e2d438e5b45f7668cbb124e158bb358333cd06e49e83a6802", size = 605387, upload-time = "2025-12-19T10:19:56.985Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/fc/6dc7659c2ae5ddf280477011f4213a74f806862856b796ef08f028e664bf/mcp-1.25.0-py3-none-any.whl", hash = "sha256:b37c38144a666add0862614cc79ec276e97d72aa8ca26d622818d4e278b9721a", size = 233076, upload-time = "2025-12-19T10:19:55.416Z" },
+]
+
+[[package]]
+name = "mdurl"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729, upload-time = "2022-08-14T12:40:10.846Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
 ]
 
 [[package]]
@@ -2442,6 +2497,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f9/16/cdb035814d346126fc0e7c80eb1f083a6668b12874c20173a7a0d030bca3/opentelemetry_instrumentation_haystack-0.51.0.tar.gz", hash = "sha256:7e36fd69bb8aa28bb90865f3640b282661524b7d5332d30ec1acf33f245284fd", size = 78004, upload-time = "2026-01-20T11:41:59.41Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/8b/9a00a55cc1ed2f1f5ab9d67be0127e9d872cd0981e3cd51883db1f3a2613/opentelemetry_instrumentation_haystack-0.51.0-py3-none-any.whl", hash = "sha256:4f19ea8f6613f0e75964880c0a53d243ad07e5b66f825d390e14a6330c80e935", size = 7505, upload-time = "2026-01-20T11:41:23.467Z" },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-httpx"
+version = "0.60b1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/86/08/11208bcfcab4fc2023252c3f322aa397fd9ad948355fea60f5fc98648603/opentelemetry_instrumentation_httpx-0.60b1.tar.gz", hash = "sha256:a506ebaf28c60112cbe70ad4f0338f8603f148938cb7b6794ce1051cd2b270ae", size = 20611, upload-time = "2025-12-11T13:37:01.661Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/43/59/b98e84eebf745ffc75397eaad4763795bff8a30cbf2373a50ed4e70646c5/opentelemetry_instrumentation_httpx-0.60b1-py3-none-any.whl", hash = "sha256:f37636dd742ad2af83d896ba69601ed28da51fa4e25d1ab62fde89ce413e275b", size = 15701, upload-time = "2025-12-11T13:36:04.56Z" },
 ]
 
 [[package]]
@@ -3326,6 +3397,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pygments"
+version = "2.19.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/77/a5b8c569bf593b0140bde72ea885a803b82086995367bf2037de0159d924/pygments-2.19.2.tar.gz", hash = "sha256:636cb2477cec7f8952536970bc533bc43743542f70392ae026374600add5b887", size = 4968631, upload-time = "2025-06-21T13:39:12.283Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl", hash = "sha256:86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b", size = 1225217, upload-time = "2025-06-21T13:39:07.939Z" },
+]
+
+[[package]]
 name = "pyjwt"
 version = "2.10.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3622,6 +3702,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/79/30/5b1b6c28c105629cc12b33bdcbb0b11b5bb1880c6cfbd955f9e792921aa8/rfc3986-1.5.0.tar.gz", hash = "sha256:270aaf10d87d0d4e095063c65bf3ddbc6ee3d0b226328ce21e036f946e421835", size = 49378, upload-time = "2021-05-07T23:29:27.183Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c4/e5/63ca2c4edf4e00657584608bee1001302bbf8c5f569340b78304f2f446cb/rfc3986-1.5.0-py2.py3-none-any.whl", hash = "sha256:a86d6e1f5b1dc238b218b012df0aa79409667bb209e58da56d0b94704e712a97", size = 31976, upload-time = "2021-05-07T23:29:25.611Z" },
+]
+
+[[package]]
+name = "rich"
+version = "14.3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown-it-py" },
+    { name = "pygments" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/74/99/a4cab2acbb884f80e558b0771e97e21e939c5dfb460f488d19df485e8298/rich-14.3.2.tar.gz", hash = "sha256:e712f11c1a562a11843306f5ed999475f09ac31ffb64281f73ab29ffdda8b3b8", size = 230143, upload-time = "2026-02-01T16:20:47.908Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/45/615f5babd880b4bd7d405cc0dc348234c5ffb6ed1ea33e152ede08b2072d/rich-14.3.2-py3-none-any.whl", hash = "sha256:08e67c3e90884651da3239ea668222d19bea7b589149d8014a21c633420dbb69", size = 309963, upload-time = "2026-02-01T16:20:46.078Z" },
 ]
 
 [[package]]

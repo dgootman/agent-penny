@@ -12,7 +12,7 @@ Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainl
 - **User-Specific Persistent Memory**: Per-user memory stored on disk for continuity and personalization.
 - **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5), Google (Gemini 3), and Bedrock-backed Anthropic models.
 - **Conversation Starters**: Pre-defined prompts like "📅 Today's Calendar" and "✉️ Mail Summary".
-- **Structured Logging**: JSON logging via `loguru` for easier debugging and monitoring.
+- **Observability**: OpenTelemetry-based observability via `logfire` and JSON logging via `loguru`.
 - **Container-Ready**: Includes a `Dockerfile` for deployment.
 
 ### Integrations
@@ -153,6 +153,9 @@ You can also build and run the application using Docker.
 - `PERPLEXITY_API_KEY`: (Optional) Your Perplexity AI API key. If provided, enables the `perplexity` tool.
 - `WHISPER_MODEL`: (Optional) The Whisper model size (e.g., `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en`, `medium`, `medium.en`, `large-v1`, `large-v2`, `large-v3`). If set, enables voice interaction (speech-to-text).
 - `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. Defaults to `false`.
+- `LOGFIRE_SEND_TO_LOGFIRE`: (Optional) Set to `true` to send traces to Logfire.
+- `OTEL_SERVICE_NAME`: (Optional) Set the service name for OpenTelemetry traces. Defaults to `agent-penny`.
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: (Optional) The endpoint for the OTLP exporter.
 - `LOGURU_LEVEL`: (Optional) Sets the logging level. Defaults to `DEBUG`. Set to `TRACE` for verbose event logging.
 - `DATA_DIR`: (Optional) Specifies the directory to store agent data, such as memories. Defaults to `~/.local/share/agent-penny`.
 
@@ -162,4 +165,5 @@ You can also build and run the application using Docker.
 - [pydantic-ai](https://github.com/vLLM-project/pydantic-ai): For the agent and LLM interaction.
 - [MarkItDown](https://github.com/microsoft/markitdown): For converting HTML emails to text.
 - [Loguru](https://loguru.readthedocs.io/): For logging.
+- [Logfire](https://pydantic.dev/logfire): For observability.
 - [Faster Whisper](https://github.com/SYSTRAN/faster-whisper): For speech-to-text.
