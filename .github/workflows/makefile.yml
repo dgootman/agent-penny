@@ -15,7 +15,9 @@ jobs:
     - uses: actions/checkout@v6
 
     - name: Setup FFmpeg
-      uses: federicocarboni/setup-ffmpeg@v3.1
+      run: |
+        sudo apt update
+        sudo apt install -y ffmpeg
 
     - name: Set up Python
       uses: actions/setup-python@v6
