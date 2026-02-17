@@ -2,6 +2,26 @@
 
 Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, optional web search via Perplexity, and a configurable "thinking" mode for select models.
 
+## Architecture Overview
+
+Agent Penny is designed as a modular AI assistant that integrates several modern technologies:
+
+- **Frontend**: [Chainlit](https://docs.chainlit.io/) provides the web interface, handling chat, audio streaming, and OAuth flow.
+- **Agent Orchestration**: [Pydantic AI](https://ai.pydantic.dev/) manages the agent's logic, model interactions, and tool execution.
+- **Model Support**: Supports multiple LLM providers (Google Gemini, OpenAI, AWS Bedrock) through a unified interface.
+- **Voice Stack**: Uses `faster-whisper` for efficient on-device speech-to-text and `kokoro` for high-quality text-to-speech.
+- **Integrations**: Connects to Google Services (Gmail, Calendar) and external APIs like Perplexity for web search.
+- **Observability**: Built-in tracing and logging via [Logfire](https://pydantic.dev/logfire) and [Loguru](https://loguru.readthedocs.io/).
+
+```mermaid
+graph TD
+    User([User]) <--> Chainlit[Chainlit Web UI]
+    Chainlit <--> PydanticAI[Pydantic AI Agent]
+    PydanticAI <--> Tools[Tools: Gmail, Calendar, Memory, Perplexity]
+    PydanticAI <--> Models[LLMs: Gemini, GPT, Claude]
+    Chainlit <--> Voice[Voice: Whisper & Kokoro]
+```
+
 ## Features
 
 ### Core Features
@@ -10,7 +30,7 @@ Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainl
 - **Voice Interaction**: Real-time speech-to-text using `faster-whisper` and high-quality text-to-speech using `kokoro`.
 - **Extensible Toolset**: Add new tools alongside built-ins like current date, memory, and integrations.
 - **User-Specific Persistent Memory**: Per-user memory stored on disk for continuity and personalization.
-- **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5), Google (Gemini 3), and Bedrock-backed Anthropic models.
+- **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5), Google (Gemini 2.5 and 3), and Bedrock-backed Anthropic models.
 - **Conversation Starters**: Pre-defined prompts like "📅 Today's Calendar" and "✉️ Mail Summary".
 - **Observability**: OpenTelemetry-based observability via `logfire` and JSON logging via `loguru`.
 - **Container-Ready**: Includes a `Dockerfile` for deployment.
@@ -147,17 +167,32 @@ You can also build and run the application using Docker.
 
 ## Configuration
 
-- `MODEL`: (Required) Specifies the LLM to use. Examples: `openai:gpt-5.2`, `openai:gpt-5-mini`, `google-gla:gemini-3-pro-preview`, `google-gla:gemini-3-flash-preview`, `bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0`.
-- `OAUTH_GOOGLE_CLIENT_ID`: (Optional) Your Google OAuth Client ID. Required for Google Calendar and Gmail integration.
-- `OAUTH_GOOGLE_CLIENT_SECRET`: (Optional) Your Google OAuth Client Secret. Required for Google Calendar and Gmail integration.
-- `PERPLEXITY_API_KEY`: (Optional) Your Perplexity AI API key. If provided, enables the `perplexity` tool.
-- `WHISPER_MODEL`: (Optional) The Whisper model size (e.g., `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en`, `medium`, `medium.en`, `large-v1`, `large-v2`, `large-v3`). If set, enables voice interaction (speech-to-text).
-- `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. Defaults to `false`.
+- `MODEL`: (Required) Specifies the LLM to use.
+    - **Google**: `google-gla:gemini-3-pro-preview`, `google-gla:gemini-3-flash-preview`, etc.
+    - **OpenAI**: `openai:gpt-5.2`, `openai:gpt-5-mini`, etc.
+    - **Bedrock**: `bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0`, etc.
+- `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. This allows the model to "reason" before providing an answer, which is displayed as a separate step in the UI.
+- `WHISPER_MODEL`: (Optional) Enables voice interaction. Set to a Whisper model size (e.g., `base`, `small`, `medium`). If enabled, you can talk to Penny by clicking the microphone icon.
+- `OAUTH_GOOGLE_CLIENT_ID` & `OAUTH_GOOGLE_CLIENT_SECRET`: (Optional) Required for Google Calendar and Gmail integration.
+- `PERPLEXITY_API_KEY`: (Optional) Enables the `perplexity` tool for real-time web searches.
 - `LOGFIRE_SEND_TO_LOGFIRE`: (Optional) Set to `true` to send traces to Logfire.
 - `OTEL_SERVICE_NAME`: (Optional) Set the service name for OpenTelemetry traces. Defaults to `agent-penny`.
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: (Optional) The endpoint for the OTLP exporter.
 - `LOGURU_LEVEL`: (Optional) Sets the logging level. Defaults to `DEBUG`. Set to `TRACE` for verbose event logging.
 - `DATA_DIR`: (Optional) Specifies the directory to store agent data, such as memories. Defaults to `~/.local/share/agent-penny`.
+
+### Voice Interaction
+
+When `WHISPER_MODEL` is set, Agent Penny supports full voice-to-voice interaction:
+1. **Speech-to-Text**: Uses `faster-whisper` to transcribe your voice in real-time.
+2. **Text-to-Speech**: Uses `kokoro` to read the agent's response back to you.
+*Note: The first time you use voice, models will be downloaded automatically (requires several GB of space depending on the chosen Whisper model).*
+
+### Thinking Mode
+
+Thinking mode enables advanced reasoning capabilities for supported models. When enabled:
+- The agent's internal thought process is visible in the Chainlit UI under a "Thinking" step.
+- This is particularly useful for complex tasks like summarization, scheduling, or coding.
 
 ## Built With
 
@@ -168,3 +203,7 @@ You can also build and run the application using Docker.
 - [Logfire](https://pydantic.dev/logfire): For observability.
 - [Faster Whisper](https://github.com/SYSTRAN/faster-whisper): For speech-to-text.
 - [Kokoro](https://github.com/hexgrad/kokoro): For text-to-speech.
+
+---
+
+🚀 **This README brought to you by Google Gemini** ✨
