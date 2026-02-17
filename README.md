@@ -56,7 +56,7 @@ To grant Agent Penny access to your email and calendar, you'll need to set up OA
     4. Under Audience - Add your own Gmail as a test user.
 3. Start Agent Penny with the provided `OAUTH_GOOGLE_CLIENT_ID` and `OAUTH_GOOGLE_CLIENT_SECRET` as an environment variable.
 
-For other OAuth providers, check out the [Chainlit OAuth docs](http://docs.chainlit.io/authentication/oauth).
+For other OAuth providers, check out the [Chainlit OAuth docs](https://docs.chainlit.io/authentication/oauth).
 
 ## Getting Started
 
@@ -162,7 +162,7 @@ You can also build and run the application using Docker.
 ## Built With
 
 - [Chainlit](https://docs.chainlit.io/): For the web UI and chat interface.
-- [pydantic-ai](https://github.com/vLLM-project/pydantic-ai): For the agent and LLM interaction.
+- [pydantic-ai](https://github.com/pydantic/pydantic-ai): For the agent and LLM interaction.
 - [MarkItDown](https://github.com/microsoft/markitdown): For converting HTML emails to text.
 - [Loguru](https://loguru.readthedocs.io/): For logging.
 - [Logfire](https://pydantic.dev/logfire): For observability.
