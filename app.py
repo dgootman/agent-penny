@@ -176,6 +176,7 @@ async def on_chat_start():
                 "openai:gpt-5-nano",
             ],
             "google-gla": [  # https://ai.google.dev/gemini-api/docs/models
+                "google-gla:gemini-3.1-pro-preview",
                 "google-gla:gemini-3-pro-preview",
                 "google-gla:gemini-3-flash-preview",
                 "google-gla:gemini-2.5-pro",
