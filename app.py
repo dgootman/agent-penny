@@ -35,7 +35,7 @@ from agent_penny.logging import json_log_sink
 from agent_penny.providers.google import GoogleProvider
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
-from agent_penny.tools.tavily_search import tavily_search as tavily
+from agent_penny.tools.tavily_search import tavily_search
 
 logger.remove()
 logger.add(json_log_sink)
@@ -223,7 +223,7 @@ async def on_chat_start():
             tools.append(perplexity)
 
         if "TAVILY_API_KEY" in os.environ:
-            tools.append(tavily)
+            tools.append(tavily_search)
 
         config = agent_config()
 
