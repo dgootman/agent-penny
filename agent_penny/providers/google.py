@@ -1,8 +1,9 @@
 import os
-from base64 import urlsafe_b64decode
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 from datetime import date, datetime, tzinfo
 from email import message_from_bytes
 from email.header import decode_header
+from email.message import EmailMessage
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
@@ -14,7 +15,17 @@ from loguru import logger
 from markitdown import MarkItDown
 from pydantic_ai import ModelRetry
 
-from ..types import Calendar, CalendarEvent, MailMessage
+from ..types import (
+    Calendar,
+    CalendarEvent,
+    CreateDraftRequest,
+    CreateDraftResponse,
+    Draft,
+    DraftRequest,
+    MailMessage,
+    UpdateDraftRequest,
+    UpdateDraftResponse,
+)
 
 md = MarkItDown(enable_plugins=False)
 
@@ -39,10 +50,15 @@ class GoogleProvider:
         self.email_service = build("gmail", "v1", credentials=self.credentials)
 
         self.tools = [
-            self.calendar_add_event,
+            self.calendar_create_event,
             self.calendar_list,
             self.calendar_list_events,
             self.email_list_messages,
+            self.email_list_drafts,
+            self.email_get_draft,
+            self.email_create_draft,
+            self.email_update_draft,
+            self.email_delete_draft,
         ]
 
     def calendar_service(self):
@@ -187,7 +203,7 @@ class GoogleProvider:
 
         return sorted(events, key=lambda event: event["start_time"].isoformat())
 
-    def calendar_add_event(self, event: CalendarEvent) -> CalendarEvent:
+    def calendar_create_event(self, event: CalendarEvent) -> CalendarEvent:
         logger.debug("Adding calendar event", event=event)
 
         tz = (
@@ -271,10 +287,12 @@ class GoogleProvider:
         mail_message: MailMessage = {
             "id": message["id"],
             "from": decode(email["from"]),
-            "subject": decode(email["subject"]),
             "received": datetime.fromtimestamp(int(message["internalDate"]) / 1000),
             "content": get_payload(),
         }
+
+        if email["subject"]:
+            mail_message["subject"] = decode(email["subject"])
 
         if email["to"]:
             mail_message["to"] = decode(email["to"])
@@ -310,3 +328,82 @@ class GoogleProvider:
         logger.trace("Google messages metadata", message_metadata=message_metadata)
 
         return [self.email_get_message(message["id"]) for message in message_metadata]
+
+    def email_list_drafts(self) -> list[Draft]:
+        logger.debug("List mail drafts")
+
+        draft_metadata = self.email_service.users().drafts().list(userId="me").execute()
+
+        logger.trace("Google drafts listed", draft_metadata=draft_metadata)
+
+        return [self.email_get_draft(draft["id"]) for draft in draft_metadata["drafts"]]
+
+    def email_get_draft(self, id: str) -> Draft:
+        logger.debug("Get mail draft", id=id)
+
+        draft = (
+            self.email_service.users()
+            .drafts()
+            .get(userId="me", id=id, format="raw")
+            .execute()
+        )
+
+        logger.trace("Google draft retrieved", draft=draft)
+
+        return {
+            "id": draft["id"],
+            "message": self.google_message_adapter(draft["message"]),
+        }
+
+    def draft_to_encoded_message(self, draft: DraftRequest) -> str:
+        email = EmailMessage()
+
+        email["Subject"] = draft["subject"]
+        email["To"] = draft["to"]
+        email.set_content(draft["content"])
+
+        encoded_message = urlsafe_b64encode(email.as_bytes()).decode()
+
+        return encoded_message
+
+    def email_create_draft(self, request: CreateDraftRequest) -> CreateDraftResponse:
+        logger.debug("Creating mail draft", request=request)
+
+        encoded_message = self.draft_to_encoded_message(request)
+
+        draft = (
+            self.email_service.users()
+            .drafts()
+            .create(userId="me", body={"message": {"raw": encoded_message}})
+            .execute()
+        )
+
+        logger.trace("Google draft created", draft=draft)
+
+        return {"id": draft["id"]}
+
+    def email_update_draft(
+        self, id: str, request: UpdateDraftRequest
+    ) -> UpdateDraftResponse:
+        logger.debug("Update mail draft", id=id, request=request)
+
+        # encoded message
+        encoded_message = self.draft_to_encoded_message(request)
+
+        draft = (
+            self.email_service.users()
+            .drafts()
+            .update(userId="me", id=id, body={"message": {"raw": encoded_message}})
+            .execute()
+        )
+
+        logger.trace("Google draft updated", draft=draft)
+
+        return {"id": draft["id"]}
+
+    def email_delete_draft(self, id: str) -> None:
+        logger.debug("Delete mail draft", id=id)
+
+        self.email_service.users().drafts().delete(userId="me", id=id).execute()
+
+        logger.trace("Google draft deleted", id=id)

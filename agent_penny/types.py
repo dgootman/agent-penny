@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import NotRequired, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 
 class Calendar(TypedDict):
@@ -15,17 +15,44 @@ class CalendarEvent(TypedDict):
     location: NotRequired[str]
     start_time: datetime | date
     end_time: datetime | date
-    calendar_id: str
+    calendar_id: Literal["primary"] | str
 
 
 MailMessage = TypedDict(
     "MailMessage",
     {
         "id": str,
-        "subject": str,
+        "subject": NotRequired[str],
         "from": str,
         "to": NotRequired[str],
         "received": datetime,
         "content": str,
     },
 )
+
+
+class Draft(TypedDict):
+    id: str
+    message: MailMessage
+
+
+class DraftRequest(TypedDict):
+    subject: str
+    to: str
+    content: str
+
+
+class CreateDraftRequest(DraftRequest):
+    pass
+
+
+class CreateDraftResponse(TypedDict):
+    id: str
+
+
+class UpdateDraftRequest(DraftRequest):
+    pass
+
+
+class UpdateDraftResponse(TypedDict):
+    id: str
