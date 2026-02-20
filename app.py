@@ -97,6 +97,10 @@ def current_date(iana_timezone: str | None = None) -> str:
 async def set_starters(user: cl.User | None):
     return [
         cl.Starter(
+            label="📝 Daily Brief",
+            message="Create a daily brief",
+        ),
+        cl.Starter(
             label="📅 Today's Calendar",
             message="What's on my calendar today?",
         ),
