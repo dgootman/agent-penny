@@ -2,3 +2,4 @@ __pycache__/
 .mypy_cache/
 .vscode/
 .env
+client_secrets.json
