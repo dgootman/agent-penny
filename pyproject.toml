@@ -29,14 +29,9 @@ dev = [
     "mypy[faster-cache]>=1.19.1",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
+    "pytest-dotenv>=0.5.2",
     "ruff>=0.14.14",
 ]
-
-[tool.mypy]
-check_untyped_defs = true
-
-[tool.logfire]
-ignore_no_config = true
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cpu" }]
@@ -47,3 +42,13 @@ en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/dow
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
+
+[tool.logfire]
+ignore_no_config = true
+
+[tool.mypy]
+check_untyped_defs = true
+
+[tool.pytest]
+addopts = ["-v"]
+env_files = [".test.env"]

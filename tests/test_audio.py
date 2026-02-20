@@ -1,13 +1,10 @@
 import os
-from pathlib import Path
 import sys
 import wave
+from pathlib import Path
 
 import pytest
 from loguru import logger
-
-logger.remove()
-logger.add(sys.stderr, serialize=True)
 
 
 async def transcribe(file: str) -> str:
