@@ -17,11 +17,11 @@ build: sync
 readme: README.md
 
 README.md: app.py agent_penny/*.py agent_penny/**/*.py
-	gemini -p "Update the README.md file using the update-readme skill" -m gemini-3-pro-preview --approval-mode auto_edit
+	gemini -i "Update the README.md file using the update-readme skill" -m gemini-3-pro-preview --approval-mode auto_edit
 
 .PHONY: review
 review:
-	gemini -p "Review the staged changes using the code-reviewer skill"
+	gemini -i "Review the staged changes using the code-reviewer skill"
 
 .PHONY: sync
 sync:
