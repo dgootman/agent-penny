@@ -35,6 +35,7 @@ from agent_penny.logging import json_log_sink
 from agent_penny.providers.google import GoogleProvider
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
+from agent_penny.tools.tavily_search import tavily_search as tavily
 
 logger.remove()
 logger.add(json_log_sink)
@@ -42,7 +43,7 @@ logger.add(json_log_sink)
 logfire.configure(
     service_name=os.environ.get("OTEL_SERVICE_NAME", "agent-penny"),
     # Do not send traces to logfire by default
-    send_to_logfire=os.environ.get("LOGFIRE_SEND_TO_LOGFIRE") == "true"
+    send_to_logfire=os.environ.get("LOGFIRE_SEND_TO_LOGFIRE") == "true",
 )
 logfire.instrument_pydantic_ai()
 logfire.instrument_httpx()
@@ -220,6 +221,9 @@ async def on_chat_start():
 
         if "PERPLEXITY_API_KEY" in os.environ:
             tools.append(perplexity)
+
+        if "TAVILY_API_KEY" in os.environ:
+            tools.append(tavily)
 
         config = agent_config()
 

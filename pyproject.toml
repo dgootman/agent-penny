@@ -17,6 +17,7 @@ dependencies = [
     "pydantic-ai-slim[bedrock,google,openai]>=1.47.0",
     "python-slugify>=8.0.4",
     "silero-vad>=6.2.0",
+    "tavily-python>=0.7.21",
     "torch>=2.10.0",
     "torchaudio>=2.10.0",
     "torchcodec>=0.10.0",
@@ -51,4 +52,4 @@ check_untyped_defs = true
 
 [tool.pytest]
 addopts = ["-v"]
-env_files = [".test.env"]
+env_files = [".env", ".test.env"]
