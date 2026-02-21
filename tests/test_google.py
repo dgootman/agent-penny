@@ -99,6 +99,18 @@ def test_calendar_list_events(provider: GoogleProvider):
         ta.validate_python(event)
 
 
+def test_calendar_list_events_not_found(provider: GoogleProvider):
+    events = provider.calendar_list_events(
+        start_time=datetime.fromisoformat("1990-01-01T00:00:00"),
+        end_time=datetime.fromisoformat("1990-01-02T00:00:00"),
+        users_iana_timezone="America/Vancouver",
+        calendar_ids=["primary"],
+    )
+
+    assert events is not None
+    assert len(events) == 0
+
+
 def test_calendar_create_event(provider: GoogleProvider):
     tz = ZoneInfo("America/Vancouver")
     tomorrow = datetime.now(tz).date() + timedelta(days=1)
@@ -124,14 +136,21 @@ def test_calendar_create_event(provider: GoogleProvider):
 
 
 def test_email_list_messages(provider: GoogleProvider):
-    events = provider.email_list_messages(max_results=10)
+    messages = provider.email_list_messages(max_results=10)
 
-    assert events
-    assert len(events) == 10
+    assert messages
+    assert len(messages) == 10
 
     ta = TypeAdapter(MailMessage)
-    for event in events:
-        ta.validate_python(event)
+    for message in messages:
+        ta.validate_python(message)
+
+
+def test_email_list_messages_not_found(provider: GoogleProvider):
+    messages = provider.email_list_messages(query="from:agent-penny@007.com")
+
+    assert messages is not None
+    assert len(messages) == 0
 
 
 def test_email_list_drafts(provider: GoogleProvider):

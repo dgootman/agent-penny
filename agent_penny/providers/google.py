@@ -316,12 +316,22 @@ class GoogleProvider:
     ) -> list[MailMessage]:
         logger.debug("Listing mail messages", query=query, max_results=max_results)
 
-        message_metadata = (
+        response = (
             self.email_service.users()
             .messages()
             .list(userId="me", q=query, maxResults=max_results)
-            .execute()["messages"]
+            .execute()
         )
+
+        logger.trace("Google messages response", response=response)
+
+        if response["resultSizeEstimate"] == 0:
+            logger.debug("No messages listed")
+
+            assert "messages" not in response or len(response["messages"]) == 0
+            return []
+
+        message_metadata = response["messages"]
 
         logger.debug(f"Listed {len(message_metadata)} mail messages")
 
