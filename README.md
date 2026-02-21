@@ -39,16 +39,18 @@ graph TD
 
 - **Google**: Securely connect your Google account to enhance your assistant with:
   - **Google Calendar**: List calendars, view events, and add new events.
-  - **Gmail**: Access and summarize emails directly within the chat interface. Automatically converts HTML emails to markdown for better readability.
+  - **Gmail**: Access emails and manage drafts directly within the chat interface. Automatically converts HTML emails to markdown for better readability.
 - **Perplexity**: (Optional) Integrate with Perplexity AI for web searches.
+- **Tavily Search**: (Optional) Integrate with Tavily for optimized AI web searches.
 
 ### Tools
 
 The agent comes equipped with the following tools:
 
-- **Google Calendar**: `calendar_list`, `calendar_list_events`, and `calendar_add_event`.
-- **Gmail**: `email_list_messages`.
+- **Google Calendar**: `calendar_list`, `calendar_list_events`, and `calendar_create_event`.
+- **Gmail**: `email_list_messages`, `email_list_drafts`, `email_get_draft`, `email_create_draft`, `email_update_draft`, and `email_delete_draft`.
 - **Perplexity**: `perplexity` for web searches (requires API key).
+- **Tavily Search**: `tavily_search` for web searches (requires API key).
 - **Memory**: `load_memory` and `save_memory` for long-term persistence.
 - **Utility**: `current_date` for the current date and time.
 
@@ -175,6 +177,7 @@ You can also build and run the application using Docker.
 - `WHISPER_MODEL`: (Optional) Enables voice interaction. Set to a Whisper model size (e.g., `base`, `small`, `medium`). If enabled, you can talk to Penny by clicking the microphone icon.
 - `OAUTH_GOOGLE_CLIENT_ID` & `OAUTH_GOOGLE_CLIENT_SECRET`: (Optional) Required for Google Calendar and Gmail integration.
 - `PERPLEXITY_API_KEY`: (Optional) Enables the `perplexity` tool for real-time web searches.
+- `TAVILY_API_KEY`: (Optional) Enables the `tavily_search` tool for real-time web searches.
 - `LOGFIRE_SEND_TO_LOGFIRE`: (Optional) Set to `true` to send traces to Logfire.
 - `OTEL_SERVICE_NAME`: (Optional) Set the service name for OpenTelemetry traces. Defaults to `agent-penny`.
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: (Optional) The endpoint for the OTLP exporter.
@@ -198,6 +201,7 @@ Thinking mode enables advanced reasoning capabilities for supported models. When
 
 - [Chainlit](https://docs.chainlit.io/): For the web UI and chat interface.
 - [pydantic-ai](https://github.com/pydantic/pydantic-ai): For the agent and LLM interaction.
+- [Tavily Python](https://github.com/tavily-ai/tavily-python): For Tavily search integration.
 - [MarkItDown](https://github.com/microsoft/markitdown): For converting HTML emails to text.
 - [Loguru](https://loguru.readthedocs.io/): For logging.
 - [Logfire](https://pydantic.dev/logfire): For observability.
