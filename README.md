@@ -1,3 +1,5 @@
+![](public/logo_light.png)
+
 # Agent Penny
 
 Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, optional web search via Perplexity, and a configurable "thinking" mode for select models.
