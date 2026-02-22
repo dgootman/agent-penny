@@ -257,7 +257,14 @@ class GoogleProvider:
             if text_part:
                 cte = text_part.get("content-transfer-encoding")
                 if cte in ["quoted-printable", "base64"]:
-                    return text_part.get_payload(decode=True).decode()  # type: ignore[union-attr]
+                    decoded_bytes = text_part.get_payload(decode=True)
+
+                    # TODO: Replace fallback with charset inference based on charset in payload
+                    try:
+                        return decoded_bytes.decode()  # type: ignore[union-attr]
+                    except UnicodeDecodeError:
+                        return decoded_bytes.decode("latin-1")  # type: ignore[union-attr]
+
                 payload = text_part.get_payload()
                 if isinstance(payload, str):
                     return payload
