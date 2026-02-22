@@ -12,7 +12,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from loguru import logger
-from markitdown import MarkItDown
+from markitdown import MarkItDown, StreamInfo
 from pydantic_ai import ModelRetry
 
 from ..types import (
@@ -276,8 +276,12 @@ class GoogleProvider:
             )
             if html_part:
                 return md.convert_stream(
-                    BytesIO(html_part.get_payload(decode=True))  # type: ignore[arg-type]
-                ).text_content
+                    BytesIO(html_part.get_payload(decode=True)),  # type: ignore[arg-type]
+                    stream_info=StreamInfo(
+                        mimetype=html_part.get_content_type(),
+                        charset=html_part.get_content_charset(),
+                    ),
+                ).markdown
 
             raise ValueError(
                 f"Unsupported content types: {', '.join(p.get_content_type() for p in payloads)}"
