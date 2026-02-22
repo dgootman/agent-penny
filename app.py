@@ -22,6 +22,7 @@ from pydantic_ai import (
     RetryPromptPart,
     ToolReturnPart,
 )
+from pydantic_ai.models.anthropic import AnthropicModelSettings
 from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
@@ -129,16 +130,10 @@ def agent_config(
         # See: https://ai.pydantic.dev/thinking/
         # TODO: Make model settings for thinking configurable
         llm_provider, model_id = model.split(":", 1)
-        if llm_provider == "openai":
-            # Upgrade to the OpenAI Responses API: https://platform.openai.com/docs/guides/migrate-to-responses
-            model = f"openai-responses:{model_id}"
-            model_settings = OpenAIResponsesModelSettings(
-                openai_reasoning_effort="low",
-                openai_reasoning_summary="detailed",
-            )
-        elif llm_provider == "google-gla":
-            model_settings = GoogleModelSettings(
-                google_thinking_config={"include_thoughts": True}
+
+        if llm_provider == "anthropic":
+            model_settings = AnthropicModelSettings(
+                anthropic_thinking={"type": "enabled", "budget_tokens": 1024},
             )
         elif llm_provider == "bedrock":
             if model_id.startswith("us.anthropic."):
@@ -151,6 +146,17 @@ def agent_config(
                 raise ValueError(
                     f"Thinking is not supported for Bedrock model: {model_id}"
                 )
+        elif llm_provider == "google-gla":
+            model_settings = GoogleModelSettings(
+                google_thinking_config={"include_thoughts": True}
+            )
+        elif llm_provider == "openai":
+            # Upgrade to the OpenAI Responses API: https://platform.openai.com/docs/guides/migrate-to-responses
+            model = f"openai-responses:{model_id}"
+            model_settings = OpenAIResponsesModelSettings(
+                openai_reasoning_effort="low",
+                openai_reasoning_summary="detailed",
+            )
         else:
             raise ValueError(f"Thinking is not supported for provider: {llm_provider}")
 
@@ -169,15 +175,15 @@ async def on_chat_start():
         logger.debug("Chat started")
 
         available_models_by_provider = {
+            "anthropic": [  # https://platform.claude.com/docs/en/about-claude/models/overview
+                "anthropic:claude-opus-4-6",
+                "anthropic:claude-sonnet-4-6",
+                "anthropic:claude-haiku-4-5-20251001",
+            ],
             "bedrock": [  # https://platform.claude.com/docs/en/about-claude/models/overview
                 "bedrock:us.anthropic.claude-opus-4-6-v1",
-                "bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                "bedrock:us.anthropic.claude-sonnet-4-6:0",
                 "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
-            ],
-            "openai": [  # https://developers.openai.com/api/docs/models
-                "openai:gpt-5.2",
-                "openai:gpt-5-mini",
-                "openai:gpt-5-nano",
             ],
             "google-gla": [  # https://ai.google.dev/gemini-api/docs/models
                 "google-gla:gemini-3.1-pro-preview",
@@ -186,6 +192,11 @@ async def on_chat_start():
                 "google-gla:gemini-2.5-pro",
                 "google-gla:gemini-2.5-flash",
                 "google-gla:gemini-2.5-flash-lite",
+            ],
+            "openai": [  # https://developers.openai.com/api/docs/models
+                "openai:gpt-5.2",
+                "openai:gpt-5-mini",
+                "openai:gpt-5-nano",
             ],
         }
 
