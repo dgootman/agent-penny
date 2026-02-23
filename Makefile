@@ -13,6 +13,10 @@ build: sync
 	uv run ruff check
 	uv run mypy app.py agent_penny
 
+.PHONY: dev
+dev: sync
+	uv run chainlit run -w app.py
+
 .PHONY: readme
 readme: README.md
 
