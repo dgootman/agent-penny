@@ -161,6 +161,8 @@ class GoogleProvider:
                             calendarId=calendar_id,
                             timeMin=start_time.isoformat(),
                             timeMax=end_time.isoformat(),
+                            singleEvents=True,
+                            showDeleted=False,
                         )
                         .execute()["items"]
                     )
@@ -171,35 +173,11 @@ class GoogleProvider:
 
             logger.trace("Google calendar events", calendar_events=calendar_events)
 
-            events: list[CalendarEvent] = []
-
-            for calendar_id, google_events in calendar_events.items():
-                for event in google_events:
-                    if event.get("recurrence"):
-                        response = (
-                            calendar_service.events()
-                            .instances(
-                                calendarId=calendar_id,
-                                eventId=event["id"],
-                                timeMin=start_time.isoformat(),
-                                timeMax=end_time.isoformat(),
-                            )
-                            .execute()
-                        )
-
-                        logger.trace(
-                            "Google calendar events for recurring event",
-                            eventId=event["id"],
-                            response=response,
-                        )
-
-                        for instance in response["items"]:
-                            events.append(
-                                self.google_event_adapter(instance, calendar_id, tz)
-                            )
-
-                    else:
-                        events.append(self.google_event_adapter(event, calendar_id, tz))
+            events = [
+                self.google_event_adapter(event, calendar_id, tz)
+                for calendar_id, google_events in calendar_events.items()
+                for event in google_events
+            ]
 
         return sorted(events, key=lambda event: event["start_time"].isoformat())
 
