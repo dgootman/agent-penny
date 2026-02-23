@@ -29,7 +29,7 @@ dependencies = [
     { name = "faster-whisper" },
     { name = "google-api-python-client" },
     { name = "kokoro" },
-    { name = "logfire", extra = ["httpx"] },
+    { name = "logfire", extra = ["httpx", "requests"] },
     { name = "loguru" },
     { name = "markitdown" },
     { name = "perplexityai" },
@@ -63,7 +63,7 @@ requires-dist = [
     { name = "faster-whisper", specifier = ">=1.2.1" },
     { name = "google-api-python-client", specifier = ">=2.188.0" },
     { name = "kokoro", specifier = ">=0.9.4" },
-    { name = "logfire", extras = ["httpx"], specifier = ">=4.24.0" },
+    { name = "logfire", extras = ["httpx", "requests"], specifier = ">=4.24.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "markitdown", specifier = ">=0.1.4" },
     { name = "perplexityai", specifier = ">=0.26.0" },
@@ -1746,6 +1746,9 @@ wheels = [
 [package.optional-dependencies]
 httpx = [
     { name = "opentelemetry-instrumentation-httpx" },
+]
+requests = [
+    { name = "opentelemetry-instrumentation-requests" },
 ]
 
 [[package]]

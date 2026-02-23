@@ -44,6 +44,7 @@ logfire.configure(
 )
 logfire.instrument_pydantic_ai()
 logfire.instrument_httpx()
+logfire.instrument_requests()
 
 default_model = os.environ["MODEL"]
 default_thinking = os.environ.get("THINKING") == "true"
