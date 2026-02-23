@@ -1,20 +1,9 @@
-import os
-from pathlib import Path
-
-import chainlit as cl
-from slugify import slugify
+import agent_penny.user_data as user_data
 
 
 class MemoryProvider:
-    def __init__(self, user: cl.User) -> None:
-        data_dir = Path(
-            os.environ.get("DATA_DIR", "~/.local/share/agent-penny")
-        ).expanduser()
-
-        user_data_dir = data_dir / slugify(user.identifier)
-        user_data_dir.mkdir(parents=True, exist_ok=True)
-
-        memory_file = user_data_dir / "memories.txt"
+    def __init__(self) -> None:
+        memory_file = user_data.path("memories.txt")
         if not memory_file.exists():
             memory_file.write_text("")
 

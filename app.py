@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import chainlit as cl
 import logfire
 from chainlit.config import config as cl_config
-from chainlit.input_widget import InputWidget, Select, Switch
+from chainlit.input_widget import InputWidget, Select, Switch, TextInput
 from chainlit.oauth_providers import providers as oauth_providers
 from loguru import logger
 from pydantic_ai import (
@@ -24,7 +24,7 @@ from pydantic_ai import (
 from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
 
-from agent_penny import audio
+from agent_penny import audio, user_data
 from agent_penny.agent import agent_config
 from agent_penny.audio import StreamingTranscriber, text_to_speech
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
@@ -108,6 +108,83 @@ async def set_starters(user: cl.User | None):
     ]
 
 
+async def render_settings():
+    env_vars_by_provider = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "bedrock": "BEDROCK_ENABLE",  # Bedrock uses AWS credentials, which have different ways of being provisioned
+        "openai": "OPENAI_API_KEY",
+        "google-gla": "GOOGLE_API_KEY",
+    }
+
+    available_models_by_provider = {
+        "anthropic": [  # https://platform.claude.com/docs/en/about-claude/models/overview
+            "anthropic:claude-opus-4-6",
+            "anthropic:claude-sonnet-4-6",
+            "anthropic:claude-haiku-4-5-20251001",
+        ],
+        "bedrock": [  # https://platform.claude.com/docs/en/about-claude/models/overview
+            "bedrock:us.anthropic.claude-opus-4-6-v1",
+            "bedrock:us.anthropic.claude-sonnet-4-6:0",
+            "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        ],
+        "google-gla": [  # https://ai.google.dev/gemini-api/docs/models
+            "google-gla:gemini-3.1-pro-preview",
+            "google-gla:gemini-3-pro-preview",
+            "google-gla:gemini-3-flash-preview",
+            "google-gla:gemini-2.5-pro",
+            "google-gla:gemini-2.5-flash",
+            "google-gla:gemini-2.5-flash-lite",
+        ],
+        "openai": [  # https://developers.openai.com/api/docs/models
+            "openai:gpt-5.2",
+            "openai:gpt-5-mini",
+            "openai:gpt-5-nano",
+        ],
+    }
+
+    user_settings = user_data.load_settings()
+    user_model = user_settings.get("model") or default_model
+
+    setting_inputs: list[InputWidget] = []
+
+    available_models = [
+        model
+        for provider, key in env_vars_by_provider.items()
+        if os.environ.get(key)
+        for model in available_models_by_provider.get(provider, [])
+    ]
+
+    if available_models:
+        setting_inputs.append(
+            Select(
+                id="model",
+                label="Model",
+                values=available_models,
+                initial_value=user_model,
+            )
+        )
+
+    setting_inputs.append(
+        TextInput(
+            id="custom_model",
+            label="Custom Model",
+            initial=None if user_model in available_models else user_model,
+        )
+    )
+
+    setting_inputs.append(
+        Switch(
+            id="thinking",
+            label="Thinking",
+            initial=user_settings["thinking"]
+            if "thinking" in user_settings
+            else default_thinking,
+        )
+    )
+
+    await cl.ChatSettings(setting_inputs).send()
+
+
 @cl.on_chat_start
 @logfire.instrument()
 async def on_chat_start():
@@ -116,61 +193,9 @@ async def on_chat_start():
     with logger.contextualize(user_id=user.identifier):
         logger.debug("Chat started")
 
-        available_models_by_provider = {
-            "anthropic": [  # https://platform.claude.com/docs/en/about-claude/models/overview
-                "anthropic:claude-opus-4-6",
-                "anthropic:claude-sonnet-4-6",
-                "anthropic:claude-haiku-4-5-20251001",
-            ],
-            "bedrock": [  # https://platform.claude.com/docs/en/about-claude/models/overview
-                "bedrock:us.anthropic.claude-opus-4-6-v1",
-                "bedrock:us.anthropic.claude-sonnet-4-6:0",
-                "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
-            ],
-            "google-gla": [  # https://ai.google.dev/gemini-api/docs/models
-                "google-gla:gemini-3.1-pro-preview",
-                "google-gla:gemini-3-pro-preview",
-                "google-gla:gemini-3-flash-preview",
-                "google-gla:gemini-2.5-pro",
-                "google-gla:gemini-2.5-flash",
-                "google-gla:gemini-2.5-flash-lite",
-            ],
-            "openai": [  # https://developers.openai.com/api/docs/models
-                "openai:gpt-5.2",
-                "openai:gpt-5-mini",
-                "openai:gpt-5-nano",
-            ],
-        }
+        await render_settings()
 
-        llm_provider = default_model.split(":", 1)[0]
-
-        setting_inputs: list[InputWidget] = []
-
-        available_models = available_models_by_provider.get(llm_provider, [])
-        if available_models:
-            if default_model not in available_models:
-                available_models.append(default_model)
-
-            setting_inputs.append(
-                Select(
-                    id="model",
-                    label="Model",
-                    values=available_models,
-                    initial_index=available_models.index(default_model),
-                )
-            )
-
-        setting_inputs.append(
-            Switch(
-                id="thinking",
-                label="Thinking",
-                initial=default_thinking,
-            )
-        )
-
-        await cl.ChatSettings(setting_inputs).send()
-
-        memory = MemoryProvider(user)
+        memory = MemoryProvider()
         tools = [current_date, *memory.tools]
 
         if google_auth_enabled:
@@ -201,17 +226,38 @@ async def on_chat_start():
         cl.user_session.set("agent", agent)
 
 
+@cl.on_settings_update
+@logfire.instrument()
+async def on_settings_update(chat_settings: dict[str, Any]):
+    user = get_user()
+
+    with logger.contextualize(user_id=user.identifier):
+        logger.debug("Settings updated", chat_settings=chat_settings)
+
+        custom_model = chat_settings.get("custom_model")
+        if custom_model:
+            chat_settings["model"] = chat_settings.pop("custom_model")
+
+        # TODO: Validate that chat settings match the user-setting structure
+        user_data.save_settings(chat_settings)  # type: ignore[arg-type]
+
+        # Custom model handling affects setting rendering
+        # by setting the model to blank if a custom model is provided
+        if custom_model:
+            await render_settings()
+
+
 @cl.on_message
 @logger.catch
 @logfire.instrument()
 async def on_message(message: cl.Message):
     user = get_user()
-    chat_settings: dict[str, Any] | None = cl.user_session.get("chat_settings")
+    user_settings = user_data.load_settings()
 
     steps: dict[str, cl.Step] = {}
 
     with logger.contextualize(
-        user_id=user.identifier, message_id=message.id, chat_settings=chat_settings
+        user_id=user.identifier, message_id=message.id, user_settings=user_settings
     ):
         try:
             logger.debug("Message received")
@@ -226,15 +272,14 @@ async def on_message(message: cl.Message):
                 message_history=message_history,
             )
 
-            if chat_settings and (
-                ("model" in chat_settings and chat_settings["model"] != default_model)
-                or (
-                    "thinking" in chat_settings
-                    and chat_settings["thinking"] != default_thinking
-                )
+            if (
+                "model" in user_settings and user_settings["model"] != default_model
+            ) or (
+                "thinking" in user_settings
+                and user_settings["thinking"] != default_thinking
             ):
                 config = agent_config(
-                    chat_settings.get("model"), chat_settings.get("thinking")
+                    user_settings.get("model"), user_settings.get("thinking")
                 )
                 stream = agent.run_stream_events(
                     message.content,
