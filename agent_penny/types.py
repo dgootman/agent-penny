@@ -39,6 +39,8 @@ class Draft(TypedDict):
 class DraftRequest(TypedDict):
     subject: str
     to: str
+    cc: NotRequired[str]
+    bcc: NotRequired[str]
     content: str
 
 

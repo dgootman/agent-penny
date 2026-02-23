@@ -359,6 +359,10 @@ class GoogleProvider:
 
         email["Subject"] = draft["subject"]
         email["To"] = draft["to"]
+        if draft.get("cc"):
+            email["Cc"] = draft["cc"]
+        if draft.get("bcc"):
+            email["Bcc"] = draft["bcc"]
         email.set_content(draft["content"])
 
         encoded_message = urlsafe_b64encode(email.as_bytes()).decode()
