@@ -1,0 +1,6 @@
+@media (prefers-color-scheme: dark) {
+  /* Invert the color of the Agent Penny avatar in dark mode */
+  img[alt="Avatar for Agent Penny"] {
+    filter: invert(100%);
+  }
+}
