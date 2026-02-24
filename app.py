@@ -125,7 +125,7 @@ async def render_settings():
         ],
         "bedrock": [  # https://platform.claude.com/docs/en/about-claude/models/overview
             "bedrock:us.anthropic.claude-opus-4-6-v1",
-            "bedrock:us.anthropic.claude-sonnet-4-6:0",
+            "bedrock:us.anthropic.claude-sonnet-4-6",
             "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
         ],
         "google-gla": [  # https://ai.google.dev/gemini-api/docs/models
