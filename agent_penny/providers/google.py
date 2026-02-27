@@ -18,6 +18,7 @@ from pydantic_ai import ModelRetry
 from ..types import (
     Calendar,
     CalendarEvent,
+    CreateCalendarEventRequest,
     CreateDraftRequest,
     CreateDraftResponse,
     Draft,
@@ -181,12 +182,14 @@ class GoogleProvider:
 
         return sorted(events, key=lambda event: event["start_time"].isoformat())
 
-    def calendar_create_event(self, event: CalendarEvent) -> CalendarEvent:
-        logger.debug("Adding calendar event", event=event)
+    def calendar_create_event(
+        self, request: CreateCalendarEventRequest
+    ) -> CalendarEvent:
+        logger.debug("Adding calendar event", request=request)
 
         tz = (
-            event["start_time"].tzinfo
-            if isinstance(event["start_time"], datetime)
+            request["start_time"].tzinfo
+            if isinstance(request["start_time"], datetime)
             else None
         )
 
@@ -197,26 +200,26 @@ class GoogleProvider:
                 return {"date": value.isoformat()}
             raise ValueError(f"Invalid date: {value}")
 
-        google_event = {
-            "summary": event["name"],
-            "location": event.get("location"),
-            "description": event.get("description"),
-            "start": date_adapter(event["start_time"]),
-            "end": date_adapter(event["end_time"]),
+        google_request = {
+            "summary": request["name"],
+            "location": request.get("location"),
+            "description": request.get("description"),
+            "start": date_adapter(request["start_time"]),
+            "end": date_adapter(request["end_time"]),
         }
 
-        logger.trace("Inserting Google calendar event", google_event=google_event)
+        logger.trace("Inserting Google calendar event", google_request=google_request)
 
         with self.calendar_service() as calendar_service:
             google_event = (
                 calendar_service.events()
-                .insert(calendarId=event["calendar_id"], body=google_event)
+                .insert(calendarId=request["calendar_id"], body=google_request)
                 .execute()
             )
 
         logger.trace("Inserted Google calendar event", google_event=google_event)
 
-        event = self.google_event_adapter(google_event, event["calendar_id"], tz)
+        event = self.google_event_adapter(google_event, request["calendar_id"], tz)
 
         logger.info("Added calendar event", event=event)
 

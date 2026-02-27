@@ -7,7 +7,7 @@ class ExtendedGoogleOAuthProvider(GoogleOAuthProvider):
         super().__init__()
 
         # Add Gmail and Calendar to authentication scope
-        self.authorize_params["scope"] = " ".join(
+        self.scopes = sorted(
             {
                 *self.authorize_params["scope"].split(" "),
                 "https://www.googleapis.com/auth/gmail.readonly",
@@ -16,6 +16,8 @@ class ExtendedGoogleOAuthProvider(GoogleOAuthProvider):
                 "https://www.googleapis.com/auth/calendar.events.owned",
             }
         )
+
+        self.authorize_params["scope"] = " ".join(self.scopes)
 
         # Add consent prompt to receive refresh token
         self.authorize_params["prompt"] = "consent"

@@ -8,14 +8,21 @@ class Calendar(TypedDict):
     description: NotRequired[str]
 
 
-class CalendarEvent(TypedDict):
-    id: str
+class CalendarEventAttributes(TypedDict):
     name: str
     description: NotRequired[str]
     location: NotRequired[str]
     start_time: datetime | date
     end_time: datetime | date
     calendar_id: Literal["primary"] | str
+
+
+class CreateCalendarEventRequest(CalendarEventAttributes):
+    pass
+
+
+class CalendarEvent(CalendarEventAttributes):
+    id: str
 
 
 MailMessage = TypedDict(

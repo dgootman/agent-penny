@@ -7,10 +7,11 @@ import chainlit as cl
 import pytest
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import-untyped]
 from loguru import logger
 from pydantic import TypeAdapter
 
+from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.providers.google import GoogleProvider
 from agent_penny.types import Calendar, CalendarEvent, MailMessage
 
@@ -18,12 +19,9 @@ pytestmark = pytest.mark.skipif(
     not os.path.exists("client_secrets.json"), reason="No client secrets file"
 )
 
-SCOPES = [
-    "https://www.googleapis.com/auth/calendar.events.owned",
-    "https://www.googleapis.com/auth/calendar.readonly",
-    "https://www.googleapis.com/auth/gmail.compose",
-    "https://www.googleapis.com/auth/gmail.readonly",
-]
+# Use the same OpenID scopes as the ExtendedGoogleOAuthProvider
+# but add openid to work around an issue where it gets added by the backend and fails the frontend
+SCOPES = ExtendedGoogleOAuthProvider().scopes + ["openid"]
 
 
 def get_credentials() -> Credentials:
@@ -38,7 +36,10 @@ def get_credentials() -> Credentials:
             flow = InstalledAppFlow.from_client_secrets_file(
                 "client_secrets.json", SCOPES
             )
-            creds = flow.run_local_server(port=8137)
+            creds = flow.run_local_server(
+                port=8137,
+                prompt="consent",  # Prompt is required to get a refresh token
+            )
 
         with open("credentials.json", "w") as token:
             token.write(creds.to_json())
