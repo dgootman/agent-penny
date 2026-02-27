@@ -10,7 +10,7 @@ Agent Penny is designed as a modular AI assistant that integrates several modern
 
 - **Frontend**: [Chainlit](https://docs.chainlit.io/) provides the web interface, handling chat, audio streaming, and OAuth flow.
 - **Agent Orchestration**: [Pydantic AI](https://ai.pydantic.dev/) manages the agent's logic, model interactions, and tool execution.
-- **Model Support**: Supports multiple LLM providers (Google Gemini, OpenAI, AWS Bedrock) through a unified interface.
+- **Model Support**: Supports multiple LLM providers (Google Gemini, OpenAI, Anthropic, AWS Bedrock) through a unified interface.
 - **Voice Stack**: Uses `faster-whisper` for efficient on-device speech-to-text and `kokoro` for high-quality text-to-speech.
 - **Integrations**: Connects to Google Services (Gmail, Calendar) and external APIs like Perplexity for web search.
 - **Observability**: Built-in tracing and logging via [Logfire](https://pydantic.dev/logfire) and [Loguru](https://loguru.readthedocs.io/).
@@ -29,10 +29,10 @@ graph TD
 ### Core Features
 
 - **Conversational AI**: Natural, context-aware conversations powered by `pydantic-ai`.
-- **Voice Interaction**: Real-time speech-to-text using `faster-whisper` and high-quality text-to-speech using `kokoro`.
+- **Voice Interaction**: Real-time speech-to-text using `faster-whisper`, voice activity detection with `silero-vad`, and high-quality text-to-speech using `kokoro`.
 - **Extensible Toolset**: Add new tools alongside built-ins like current date, memory, and integrations.
 - **User-Specific Persistent Memory**: Per-user memory stored on disk for continuity and personalization.
-- **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5), Google (Gemini 2.5 and 3), and Bedrock-backed Anthropic models.
+- **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5.2), Google (Gemini 3.1 and 2.5), Anthropic (Claude 4.6), and Bedrock-backed models.
 - **Conversation Starters**: Pre-defined prompts like "📅 Today's Calendar" and "✉️ Mail Summary".
 - **Observability**: OpenTelemetry-based observability via `logfire` and JSON logging via `loguru`.
 - **Container-Ready**: Includes a `Dockerfile` for deployment.
@@ -65,6 +65,7 @@ The application requests the following scopes:
 - `https://www.googleapis.com/auth/userinfo.profile`
 - `https://www.googleapis.com/auth/userinfo.email`
 - `https://www.googleapis.com/auth/gmail.readonly`
+- `https://www.googleapis.com/auth/gmail.compose`
 - `https://www.googleapis.com/auth/calendar.readonly`
 - `https://www.googleapis.com/auth/calendar.events.owned`
 
@@ -88,7 +89,7 @@ For other OAuth providers, check out the [Chainlit OAuth docs](https://docs.chai
 
 - Python 3.12
 - uv (recommended) or another Python environment manager
-- An LLM API key (Google, OpenAI, or AWS Bedrock)
+- An LLM API key (Google, OpenAI, Anthropic, or AWS Bedrock)
 - A Google OAuth Client ID and Secret (only if using Calendar/Gmail)
 
 ### Installation
@@ -140,6 +141,16 @@ Agent Penny can be run without Google OAuth for local development or if you do n
     export THINKING='true'
     ```
 
+    **For Anthropic:**
+    ```bash
+    export MODEL='anthropic:claude-opus-4-6' # or anthropic:claude-sonnet-4-6
+    export ANTHROPIC_API_KEY='your-anthropic-api-key'
+    export OAUTH_GOOGLE_CLIENT_ID='your-google-oauth-client-id'
+    export OAUTH_GOOGLE_CLIENT_SECRET='your-google-oauth-client-secret'
+    # Optional: Enable thinking mode
+    export THINKING='true'
+    ```
+
     For other providers and models, refer to the [Pydantic AI Models Documentation](https://ai.pydantic.dev/models/).
 
 2.  Run the application:
@@ -169,17 +180,43 @@ You can also build and run the application using Docker.
       agent-penny
     ```
 
+## Development
+
+The project includes a `Makefile` to simplify common development tasks:
+
+- `make build`: Syncs dependencies, runs linting (ruff), and type checking (mypy).
+- `make dev`: Runs the application in development mode with hot reloading.
+- `make test`: Runs the test suite using `pytest`.
+- `make readme`: Updates the README.md file using the `update-readme` skill.
+- `make review`: Reviews staged changes using the `code-reviewer` skill.
+
 ## Configuration
 
+### Models & Thinking
+
 - `MODEL`: (Required) Specifies the LLM to use.
-    - **Google**: `google-gla:gemini-3-pro-preview`, `google-gla:gemini-3-flash-preview`, etc.
+    - **Anthropic**: `anthropic:claude-opus-4-6`, `anthropic:claude-sonnet-4-6`, etc.
+    - **Google**: `google-gla:gemini-3.1-pro-preview`, `google-gla:gemini-3-pro-preview`, `google-gla:gemini-2.5-flash`, etc.
     - **OpenAI**: `openai:gpt-5.2`, `openai:gpt-5-mini`, etc.
-    - **Bedrock**: `bedrock:us.anthropic.claude-sonnet-4-5-20250929-v1:0`, etc.
+    - **Bedrock**: `bedrock:us.anthropic.claude-opus-4-6-v1`, `bedrock:us.anthropic.claude-sonnet-4-6:0`, etc.
 - `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. This allows the model to "reason" before providing an answer, which is displayed as a separate step in the UI.
+
+### API Keys & Providers
+
+- `GOOGLE_API_KEY`: Required for Google models.
+- `OPENAI_API_KEY`: Required for OpenAI models.
+- `ANTHROPIC_API_KEY`: Required for Anthropic models.
+- `BEDROCK_ENABLE`: Set to any value to enable Bedrock models (requires AWS credentials configured in your environment).
+
+### Integrations
+
 - `WHISPER_MODEL`: (Optional) Enables voice interaction. Set to a Whisper model size (e.g., `base`, `small`, `medium`). If enabled, you can talk to Penny by clicking the microphone icon.
 - `OAUTH_GOOGLE_CLIENT_ID` & `OAUTH_GOOGLE_CLIENT_SECRET`: (Optional) Required for Google Calendar and Gmail integration.
 - `PERPLEXITY_API_KEY`: (Optional) Enables the `perplexity` tool for real-time web searches.
 - `TAVILY_API_KEY`: (Optional) Enables the `tavily_search` tool for real-time web searches.
+
+### Observability & System
+
 - `LOGFIRE_SEND_TO_LOGFIRE`: (Optional) Set to `true` to send traces to Logfire.
 - `OTEL_SERVICE_NAME`: (Optional) Set the service name for OpenTelemetry traces. Defaults to `agent-penny`.
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: (Optional) The endpoint for the OTLP exporter.
@@ -209,6 +246,8 @@ Thinking mode enables advanced reasoning capabilities for supported models. When
 - [Logfire](https://pydantic.dev/logfire): For observability.
 - [Faster Whisper](https://github.com/SYSTRAN/faster-whisper): For speech-to-text.
 - [Kokoro](https://github.com/hexgrad/kokoro): For text-to-speech.
+- [Silero VAD](https://github.com/snakers4/silero-vad): For voice activity detection.
+- [ua-parser](https://github.com/ua-parser/uap-python): For user agent parsing.
 
 ---
 
