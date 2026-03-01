@@ -91,6 +91,7 @@ For other OAuth providers, check out the [Chainlit OAuth docs](https://docs.chai
 - uv (recommended) or another Python environment manager
 - An LLM API key (Google, OpenAI, Anthropic, or AWS Bedrock)
 - A Google OAuth Client ID and Secret (only if using Calendar/Gmail)
+- FFmpeg (required for voice interaction features)
 
 ### Installation
 
@@ -100,7 +101,13 @@ For other OAuth providers, check out the [Chainlit OAuth docs](https://docs.chai
     cd agent-penny
     ```
 
-2. Create a virtual environment and install the Python dependencies using `uv`:
+2. Install system dependencies:
+    - Install FFmpeg (required for voice features):
+      - macOS: `brew install ffmpeg`
+      - Ubuntu/Debian: `sudo apt update && sudo apt install ffmpeg`
+      - CentOS/RHEL: `sudo yum install ffmpeg`
+
+3. Create a virtual environment and install the Python dependencies using `uv`:
 
     ```bash
     uv venv
@@ -229,6 +236,11 @@ When `WHISPER_MODEL` is set, Agent Penny supports full voice-to-voice interactio
 1. **Speech-to-Text**: Uses `faster-whisper` to transcribe your voice in real-time.
 2. **Text-to-Speech**: Uses `kokoro` to read the agent's response back to you.
 *Note: The first time you use voice, models will be downloaded automatically (requires several GB of space depending on the chosen Whisper model).*
+
+**Important**: FFmpeg must be installed on your system for voice features to work. Install FFmpeg using your system's package manager:
+- macOS: `brew install ffmpeg`
+- Ubuntu/Debian: `sudo apt update && sudo apt install ffmpeg`
+- CentOS/RHEL: `sudo yum install ffmpeg`
 
 ### Thinking Mode
 
