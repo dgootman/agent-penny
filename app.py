@@ -235,9 +235,9 @@ async def on_settings_update(chat_settings: dict[str, Any]):
     with logger.contextualize(user_id=user.identifier):
         logger.debug("Settings updated", chat_settings=chat_settings)
 
-        custom_model = chat_settings.get("custom_model")
+        custom_model = chat_settings.pop("custom_model", None)
         if custom_model:
-            chat_settings["model"] = chat_settings.pop("custom_model")
+            chat_settings["model"] = custom_model
 
         # TODO: Validate that chat settings match the user-setting structure
         user_data.save_settings(chat_settings)  # type: ignore[arg-type]
