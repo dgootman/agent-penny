@@ -2,7 +2,7 @@
 
 # Agent Penny
 
-Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, optional web search via Perplexity, and a configurable "thinking" mode for select models.
+Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, optional web search via Perplexity/Tavily/DuckDuckGo, and a configurable "thinking" mode for supported models.
 
 ## Architecture Overview
 
@@ -44,6 +44,7 @@ graph TD
   - **Gmail**: Access emails and manage drafts directly within the chat interface. Automatically converts HTML emails to markdown for better readability.
 - **Perplexity**: (Optional) Integrate with Perplexity AI for web searches.
 - **Tavily Search**: (Optional) Integrate with Tavily for optimized AI web searches.
+- **DuckDuckGo Search**: (Optional) Enable built-in DuckDuckGo search.
 
 ### Tools
 
@@ -53,6 +54,7 @@ The agent comes equipped with the following tools:
 - **Gmail**: `email_list_messages`, `email_list_drafts`, `email_get_draft`, `email_create_draft`, `email_update_draft`, and `email_delete_draft`.
 - **Perplexity**: `perplexity` for web searches (requires API key).
 - **Tavily Search**: `tavily_search` for web searches (requires API key).
+- **DuckDuckGo Search**: `duckduckgo_search_tool` for web searches (enabled with `DUCKDUCKGO_SEARCH_ENABLED=true`).
 - **Memory**: `load_memory` and `save_memory` for long-term persistence.
 - **Utility**: `current_date` for the current date and time.
 
@@ -221,6 +223,7 @@ The project includes a `Makefile` to simplify common development tasks:
 - `OAUTH_GOOGLE_CLIENT_ID` & `OAUTH_GOOGLE_CLIENT_SECRET`: (Optional) Required for Google Calendar and Gmail integration.
 - `PERPLEXITY_API_KEY`: (Optional) Enables the `perplexity` tool for real-time web searches.
 - `TAVILY_API_KEY`: (Optional) Enables the `tavily_search` tool for real-time web searches.
+- `DUCKDUCKGO_SEARCH_ENABLED`: (Optional) Set to `true` to enable DuckDuckGo web search.
 
 ### Observability & System
 

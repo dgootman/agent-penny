@@ -21,6 +21,7 @@ from pydantic_ai import (
     RetryPromptPart,
     ToolReturnPart,
 )
+from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
 
@@ -208,6 +209,9 @@ async def on_chat_start():
 
         if "TAVILY_API_KEY" in os.environ:
             tools.append(tavily_search)
+
+        if os.environ.get("DUCKDUCKGO_SEARCH_ENABLED") == "true":
+            tools.append(duckduckgo_search_tool())
 
         config = agent_config()
 
