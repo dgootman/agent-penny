@@ -34,6 +34,7 @@ graph TD
 - **User-Specific Persistent Memory**: Per-user memory stored on disk for continuity and personalization.
 - **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5.2), Google (Gemini 3.1 and 2.5), Anthropic (Claude 4.6), and Bedrock-backed models.
 - **Conversation Starters**: Pre-defined prompts like "📅 Today's Calendar" and "✉️ Mail Summary".
+- **Runtime Chat Settings**: Switch model and thinking mode from Chainlit chat settings, including custom model IDs.
 - **Observability**: OpenTelemetry-based observability via `logfire` and JSON logging via `loguru`.
 - **Container-Ready**: Includes a `Dockerfile` for deployment.
 
@@ -164,7 +165,7 @@ Agent Penny can be run without Google OAuth for local development or if you do n
 
 2.  Run the application:
     ```bash
-    chainlit run -w app.py
+    uv run chainlit run -w app.py
     ```
 
 3.  Open your web browser and navigate to `http://localhost:8000`.
@@ -207,7 +208,7 @@ The project includes a `Makefile` to simplify common development tasks:
     - **Anthropic**: `anthropic:claude-opus-4-6`, `anthropic:claude-sonnet-4-6`, etc.
     - **Google**: `google-gla:gemini-3.1-pro-preview`, `google-gla:gemini-3-pro-preview`, `google-gla:gemini-2.5-flash`, etc.
     - **OpenAI**: `openai:gpt-5.2`, `openai:gpt-5-mini`, etc.
-    - **Bedrock**: `bedrock:us.anthropic.claude-opus-4-6-v1`, `bedrock:us.anthropic.claude-sonnet-4-6:0`, etc.
+    - **Bedrock**: `bedrock:us.anthropic.claude-opus-4-6-v1`, `bedrock:us.anthropic.claude-sonnet-4-6`, `bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0`, etc.
 - `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. This allows the model to "reason" before providing an answer, which is displayed as a separate step in the UI.
 
 ### API Keys & Providers
@@ -248,7 +249,7 @@ When `WHISPER_MODEL` is set, Agent Penny supports full voice-to-voice interactio
 ### Thinking Mode
 
 Thinking mode enables advanced reasoning capabilities for supported models. When enabled:
-- The agent's internal thought process is visible in the Chainlit UI under a "Thinking" step.
+- The agent's internal thought process is visible in the Chainlit UI under a `Thinking` step.
 - This is particularly useful for complex tasks like summarization, scheduling, or coding.
 
 ## Built With
