@@ -1,3 +1,4 @@
+import asyncio
 import getpass
 import os
 from datetime import datetime
@@ -50,6 +51,23 @@ logfire.instrument_requests()
 default_model = os.environ["MODEL"]
 default_thinking = os.environ.get("THINKING") == "true"
 google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
+audio_input_enabled = "WHISPER_MODEL" in os.environ
+
+
+@cl.on_app_startup
+@logfire.instrument()
+async def on_app_startup():
+    logger.debug("App started")
+
+    if audio_input_enabled:
+        assert cl_config.features.audio is not None
+
+        cl_config.features.audio.enabled = True
+
+        # Prime the audio model caches in the background
+        asyncio.create_task(asyncio.to_thread(audio.whisper_model))
+        asyncio.create_task(asyncio.to_thread(audio.kokoro_model))
+
 
 if google_auth_enabled:
     logger.debug("Google mode")
@@ -346,15 +364,7 @@ async def on_message(message: cl.Message):
             raise e
 
 
-if "WHISPER_MODEL" in os.environ:
-    assert cl_config.features.audio is not None
-
-    cl_config.features.audio.enabled = True
-
-    # Prime the audio model caches
-    with logfire.span("cache_startup"):
-        audio.whisper_model()
-        audio.kokoro_model()
+if audio_input_enabled:
 
     @cl.on_audio_start
     @logfire.instrument()
