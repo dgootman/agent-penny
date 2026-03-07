@@ -28,6 +28,7 @@ from agent_penny.agent import agent_config
 from agent_penny.agent import create as agent_create
 from agent_penny.audio import StreamingTranscriber, text_to_speech
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
+from agent_penny.data import LocalDataLayer
 from agent_penny.logging import json_log_sink
 
 logger.remove()
@@ -191,6 +192,14 @@ async def render_settings():
     )
 
     await cl.ChatSettings(setting_inputs).send()
+
+
+if os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true":
+    logger.warning("Conversation history is a work in progress")
+
+    @cl.data_layer
+    def get_data_layer():
+        return LocalDataLayer()
 
 
 @cl.on_chat_start

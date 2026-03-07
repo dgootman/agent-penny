@@ -15,10 +15,15 @@ def get_user() -> cl.User:
     return user
 
 
-def path(file_name: str) -> Path:
-    user_data_dir = data_dir / slugify(get_user().identifier)
+def _user_path(user: str, file_name: str) -> Path:
+    """Insecure function. Use :func:`path` whenever user context is available."""
+    user_data_dir = data_dir / slugify(user)
     user_data_dir.mkdir(parents=True, exist_ok=True)
     return user_data_dir / file_name
+
+
+def path(file_name: str) -> Path:
+    return _user_path(get_user().identifier, file_name)
 
 
 def load(file_name: str, default: str = "") -> str:
