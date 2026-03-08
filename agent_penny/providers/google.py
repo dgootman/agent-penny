@@ -15,7 +15,8 @@ from loguru import logger
 from markitdown import MarkItDown, StreamInfo
 from pydantic_ai import FunctionToolset, ModelRetry
 
-from ..types import (
+from agent_penny.chainlit_utils import get_user
+from agent_penny.types import (
     Calendar,
     CalendarEvent,
     CreateCalendarEventRequest,
@@ -33,8 +34,7 @@ md = MarkItDown(enable_plugins=False)
 
 class GoogleProvider:
     def __init__(self, user: cl.User | None = None):
-        user = user or cl.user_session.get("user")
-        assert user
+        user = user or get_user()
 
         token = user.metadata["token"]
         refresh_token = user.metadata["refresh_token"]

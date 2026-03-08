@@ -3,16 +3,11 @@ import os
 from pathlib import Path
 from typing import NotRequired, TypedDict
 
-import chainlit as cl
 from slugify.slugify import slugify
 
+from agent_penny.chainlit_utils import get_user
+
 data_dir = Path(os.environ.get("DATA_DIR", "~/.local/share/agent-penny")).expanduser()
-
-
-def get_user() -> cl.User:
-    user: cl.User | None = cl.user_session.get("user")
-    assert user
-    return user
 
 
 def _user_path(user: str, file_name: str) -> Path:

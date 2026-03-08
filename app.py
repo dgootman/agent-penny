@@ -28,6 +28,7 @@ from agent_penny.agent import agent_config
 from agent_penny.agent import create as agent_create
 from agent_penny.audio import StreamingTranscriber, text_to_speech
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
+from agent_penny.chainlit_utils import get_user
 from agent_penny.data import LocalDataLayer
 from agent_penny.logging import json_log_sink
 
@@ -91,12 +92,6 @@ else:
         return cl.User(
             identifier=getpass.getuser(), metadata={"provider": "standalone"}
         )
-
-
-def get_user() -> cl.User:
-    user: cl.User | None = cl.user_session.get("user")
-    assert user
-    return user
 
 
 @cl.set_starters
