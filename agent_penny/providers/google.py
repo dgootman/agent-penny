@@ -32,7 +32,10 @@ md = MarkItDown(enable_plugins=False)
 
 
 class GoogleProvider:
-    def __init__(self, user: cl.User):
+    def __init__(self, user: cl.User | None = None):
+        user = user or cl.user_session.get("user")
+        assert user
+
         token = user.metadata["token"]
         refresh_token = user.metadata["refresh_token"]
 

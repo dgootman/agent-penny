@@ -1,7 +1,7 @@
 import asyncio
 import getpass
 import os
-from typing import Any, Callable
+from typing import Any
 from uuid import uuid4
 
 import chainlit as cl
@@ -11,7 +11,6 @@ from chainlit.input_widget import InputWidget, Select, Switch, TextInput
 from chainlit.oauth_providers import providers as oauth_providers
 from loguru import logger
 from pydantic_ai import (
-    AbstractToolset,
     Agent,
     AgentRunResultEvent,
     FunctionToolCallEvent,
@@ -21,20 +20,15 @@ from pydantic_ai import (
     RetryPromptPart,
     ToolReturnPart,
 )
-from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
 
 from agent_penny import audio, user_data
 from agent_penny.agent import agent_config
+from agent_penny.agent import create as agent_create
 from agent_penny.audio import StreamingTranscriber, text_to_speech
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.logging import json_log_sink
-from agent_penny.providers.google import GoogleProvider
-from agent_penny.tools.date import current_date
-from agent_penny.tools.memory import MemoryProvider
-from agent_penny.tools.perplexity import perplexity
-from agent_penny.tools.tavily_search import tavily_search
 
 logger.remove()
 logger.add(json_log_sink)
@@ -209,43 +203,7 @@ async def on_chat_start():
 
         await render_settings()
 
-        tools: list[Callable] = [current_date]
-
-        toolsets: list[AbstractToolset] = []
-
-        memory = MemoryProvider()
-        toolsets.append(memory.toolset)
-
-        if google_auth_enabled:
-            provider = GoogleProvider(user)
-            toolsets.append(provider.toolset)
-
-        if "PERPLEXITY_API_KEY" in os.environ:
-            tools.append(perplexity)
-
-        if "TAVILY_API_KEY" in os.environ:
-            tools.append(tavily_search)
-
-        if os.environ.get("DUCKDUCKGO_SEARCH_ENABLED") == "true":
-            tools.append(duckduckgo_search_tool())
-
-        config = agent_config()
-
-        logger.debug(
-            "Creating agent",
-            **config,
-            tools=[str(t) for t in tools],
-            toolsets=toolsets,
-        )
-
-        agent = Agent(
-            **config,
-            tools=tools,
-            toolsets=toolsets,
-            system_prompt=[
-                f"You know the following from previous conversations: {memory.load_memory()}"
-            ],
-        )
+        agent = agent_create()
         cl.user_session.set("agent", agent)
 
 

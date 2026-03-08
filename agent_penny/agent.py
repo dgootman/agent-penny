@@ -1,14 +1,23 @@
 import os
-from typing import TypedDict
+from typing import Callable, TypedDict
 
-from pydantic_ai import ModelSettings
+from loguru import logger
+from pydantic_ai import AbstractToolset, Agent, ModelSettings
+from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.models.anthropic import AnthropicModelSettings
 from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 
+from agent_penny.providers.google import GoogleProvider
+from agent_penny.tools.date import current_date
+from agent_penny.tools.memory import MemoryProvider
+from agent_penny.tools.perplexity import perplexity
+from agent_penny.tools.tavily_search import tavily_search
+
 default_model = os.environ["MODEL"]
 default_thinking = os.environ.get("THINKING") == "true"
+google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 
 
 class AgentConfig(TypedDict):
@@ -63,3 +72,44 @@ def agent_config(
         "model": model,
         "model_settings": model_settings,
     }
+
+
+def create() -> Agent:
+    tools: list[Callable] = [current_date]
+
+    toolsets: list[AbstractToolset] = []
+
+    memory = MemoryProvider()
+    toolsets.append(memory.toolset)
+
+    if google_auth_enabled:
+        provider = GoogleProvider()
+        toolsets.append(provider.toolset)
+        # await cl.Message(provider.credentials.to_json()).send()
+
+    if "PERPLEXITY_API_KEY" in os.environ:
+        tools.append(perplexity)
+
+    if "TAVILY_API_KEY" in os.environ:
+        tools.append(tavily_search)
+
+    if os.environ.get("DUCKDUCKGO_SEARCH_ENABLED") == "true":
+        tools.append(duckduckgo_search_tool())
+
+    config = agent_config()
+
+    logger.debug(
+        "Creating agent",
+        **config,
+        tools=[str(t) for t in tools],
+        toolsets=toolsets,
+    )
+
+    return Agent(
+        **config,
+        tools=tools,
+        toolsets=toolsets,
+        system_prompt=[
+            f"You know the following from previous conversations: {memory.load_memory()}"
+        ],
+    )
