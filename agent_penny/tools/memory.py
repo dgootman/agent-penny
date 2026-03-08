@@ -1,3 +1,5 @@
+from pydantic_ai import FunctionToolset
+
 import agent_penny.user_data as user_data
 
 
@@ -8,7 +10,12 @@ class MemoryProvider:
             memory_file.write_text("")
 
         self.memory_file = memory_file
-        self.tools = [self.load_memory, self.save_memory]
+        self.toolset = FunctionToolset(
+            [
+                self.load_memory,
+                self.save_memory,
+            ]
+        )
 
     def load_memory(self):
         """Load the agent's persistent memory of key details from past conversations."""

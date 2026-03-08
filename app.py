@@ -1,7 +1,7 @@
 import asyncio
 import getpass
 import os
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 
 import chainlit as cl
@@ -209,10 +209,12 @@ async def on_chat_start():
 
         await render_settings()
 
-        memory = MemoryProvider()
-        tools = [current_date, *memory.tools]
+        tools: list[Callable] = [current_date]
 
         toolsets: list[AbstractToolset] = []
+
+        memory = MemoryProvider()
+        toolsets.append(memory.toolset)
 
         if google_auth_enabled:
             provider = GoogleProvider(user)
@@ -233,11 +235,12 @@ async def on_chat_start():
             "Creating agent",
             **config,
             tools=[str(t) for t in tools],
+            toolsets=toolsets,
         )
 
         agent = Agent(
             **config,
-            tools=tools,  # type: ignore[arg-type]
+            tools=tools,
             toolsets=toolsets,
             system_prompt=[
                 f"You know the following from previous conversations: {memory.load_memory()}"
