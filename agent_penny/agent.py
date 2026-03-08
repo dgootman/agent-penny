@@ -9,6 +9,7 @@ from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 
+from agent_penny.chainlit_utils import get_user
 from agent_penny.providers.google import GoogleProvider
 from agent_penny.tools.date import current_date
 from agent_penny.tools.memory import MemoryProvider
@@ -17,7 +18,6 @@ from agent_penny.tools.tavily_search import tavily_search
 
 default_model = os.environ["MODEL"]
 default_thinking = os.environ.get("THINKING") == "true"
-google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 
 
 class AgentConfig(TypedDict):
@@ -75,6 +75,8 @@ def agent_config(
 
 
 def create() -> Agent:
+    user = get_user()
+
     tools: list[Callable] = [current_date]
 
     toolsets: list[AbstractToolset] = []
@@ -82,7 +84,7 @@ def create() -> Agent:
     memory = MemoryProvider()
     toolsets.append(memory.toolset)
 
-    if google_auth_enabled:
+    if user.metadata.get("provider") == "google":
         provider = GoogleProvider()
         toolsets.append(provider.toolset)
         # await cl.Message(provider.credentials.to_json()).send()
