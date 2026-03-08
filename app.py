@@ -1,10 +1,8 @@
 import asyncio
 import getpass
 import os
-from datetime import datetime
 from typing import Any
 from uuid import uuid4
-from zoneinfo import ZoneInfo
 
 import chainlit as cl
 import logfire
@@ -32,6 +30,7 @@ from agent_penny.audio import StreamingTranscriber, text_to_speech
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.logging import json_log_sink
 from agent_penny.providers.google import GoogleProvider
+from agent_penny.tools.date import current_date
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
 from agent_penny.tools.tavily_search import tavily_search
@@ -102,12 +101,6 @@ def get_user() -> cl.User:
     user: cl.User | None = cl.user_session.get("user")
     assert user
     return user
-
-
-def current_date(iana_timezone: str | None = None) -> str:
-    return datetime.now(
-        tz=ZoneInfo(iana_timezone) if iana_timezone else None
-    ).isoformat()
 
 
 @cl.set_starters
