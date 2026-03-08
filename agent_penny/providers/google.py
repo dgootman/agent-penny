@@ -13,7 +13,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from loguru import logger
 from markitdown import MarkItDown, StreamInfo
-from pydantic_ai import ModelRetry
+from pydantic_ai import FunctionToolset, ModelRetry
 
 from ..types import (
     Calendar,
@@ -50,17 +50,19 @@ class GoogleProvider:
 
         self.email_service = build("gmail", "v1", credentials=self.credentials)
 
-        self.tools = [
-            self.calendar_create_event,
-            self.calendar_list,
-            self.calendar_list_events,
-            self.email_list_messages,
-            self.email_list_drafts,
-            self.email_get_draft,
-            self.email_create_draft,
-            self.email_update_draft,
-            self.email_delete_draft,
-        ]
+        self.toolset = FunctionToolset(
+            [
+                self.calendar_create_event,
+                self.calendar_list,
+                self.calendar_list_events,
+                self.email_list_messages,
+                self.email_list_drafts,
+                self.email_get_draft,
+                self.email_create_draft,
+                self.email_update_draft,
+                self.email_delete_draft,
+            ]
+        )
 
     def calendar_service(self):
         return build("calendar", "v3", credentials=self.credentials)

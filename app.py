@@ -11,6 +11,7 @@ from chainlit.input_widget import InputWidget, Select, Switch, TextInput
 from chainlit.oauth_providers import providers as oauth_providers
 from loguru import logger
 from pydantic_ai import (
+    AbstractToolset,
     Agent,
     AgentRunResultEvent,
     FunctionToolCallEvent,
@@ -211,9 +212,11 @@ async def on_chat_start():
         memory = MemoryProvider()
         tools = [current_date, *memory.tools]
 
+        toolsets: list[AbstractToolset] = []
+
         if google_auth_enabled:
             provider = GoogleProvider(user)
-            tools += provider.tools
+            toolsets.append(provider.toolset)
 
         if "PERPLEXITY_API_KEY" in os.environ:
             tools.append(perplexity)
@@ -235,6 +238,7 @@ async def on_chat_start():
         agent = Agent(
             **config,
             tools=tools,  # type: ignore[arg-type]
+            toolsets=toolsets,
             system_prompt=[
                 f"You know the following from previous conversations: {memory.load_memory()}"
             ],
