@@ -17,6 +17,11 @@ build: sync
 dev: sync
 	uv run chainlit run -w app.py
 
+# Instrument the app test to identify startup bottlenecks
+.PHONY: instrument
+instrument:
+	uv run pyinstrument -m pytest -o addopts= tests/test_app.py
+
 .PHONY: readme
 readme: README.md
 

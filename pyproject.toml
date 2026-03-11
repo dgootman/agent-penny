@@ -30,6 +30,7 @@ dev = [
     "google-auth-oauthlib>=1.2.4",
     "mypy[faster-cache]>=1.19.1",
     "pre-commit>=4.5.1",
+    "pyinstrument>=5.1.2",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
