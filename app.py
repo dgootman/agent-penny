@@ -9,6 +9,7 @@ import logfire
 from chainlit.config import config as cl_config
 from chainlit.input_widget import InputWidget, Select, Switch, TextInput
 from chainlit.oauth_providers import providers as oauth_providers
+from chainlit.types import ThreadDict
 from loguru import logger
 from pydantic_ai import (
     Agent,
@@ -16,9 +17,13 @@ from pydantic_ai import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     ModelMessage,
+    ModelRequest,
+    ModelResponse,
     PartEndEvent,
     RetryPromptPart,
+    TextPart,
     ToolReturnPart,
+    UserPromptPart,
 )
 from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
@@ -47,6 +52,7 @@ default_model = os.environ["MODEL"]
 default_thinking = os.environ.get("THINKING") == "true"
 google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 audio_input_enabled = "WHISPER_MODEL" in os.environ
+conversation_history_enabled = os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true"
 
 
 @cl.on_app_startup
@@ -190,12 +196,19 @@ async def render_settings():
     await cl.ChatSettings(setting_inputs).send()
 
 
-if os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true":
+if conversation_history_enabled:
     logger.warning("Conversation history is a work in progress")
 
     @cl.data_layer
     def get_data_layer():
         return LocalDataLayer()
+
+
+async def prepare_chat():
+    await render_settings()
+
+    agent = agent_create()
+    cl.user_session.set("agent", agent)
 
 
 @cl.on_chat_start
@@ -206,10 +219,35 @@ async def on_chat_start():
     with logger.contextualize(user_id=user.identifier):
         logger.debug("Chat started")
 
-        await render_settings()
+        await prepare_chat()
 
-        agent = agent_create()
-        cl.user_session.set("agent", agent)
+
+if conversation_history_enabled:
+
+    @cl.on_chat_resume
+    @logfire.instrument()
+    async def on_chat_resume(thread: ThreadDict):
+        user = get_user()
+
+        with logger.contextualize(user_id=user.identifier):
+            logger.debug(
+                "Chat resumed",
+                thread={k: v for k, v in thread.items() if k in ["id", "name"]},
+            )
+
+            await prepare_chat()
+
+            message_history: list[ModelMessage] = []
+
+            for step in thread["steps"]:
+                if step["type"] == "user_message":
+                    message_history.append(
+                        ModelRequest([UserPromptPart(content=step["output"])])
+                    )
+                elif step["type"] == "assistant_message":
+                    message_history.append(ModelResponse([TextPart(step["output"])]))
+
+            cl.user_session.set("message_history", message_history)
 
 
 @cl.on_settings_update
