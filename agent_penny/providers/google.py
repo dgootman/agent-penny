@@ -307,7 +307,7 @@ class GoogleProvider:
         return self.google_message_adapter(message)
 
     def email_list_messages(
-        self, query="in:inbox", max_results=100
+        self, query="in:inbox", max_results=10
     ) -> list[MailMessage]:
         logger.debug("Listing mail messages", query=query, max_results=max_results)
 
