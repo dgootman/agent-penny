@@ -47,12 +47,6 @@ class GoogleProvider:
             token_uri="https://oauth2.googleapis.com/token",
         )
 
-        # The Calendar API keeps throwing `SSLError: [SSL] record layer failure (_ssl.c:2580)` if the instance is reused.
-        # Instead, we'll use a context-managed instance whenever interacting with the Calendar API
-        # self.calendar_service = build("calendar", "v3", credentials=self.credentials)
-
-        self.email_service = build("gmail", "v1", credentials=self.credentials)
-
         self.toolset = FunctionToolset(
             [
                 self.calendar_create_event,
@@ -69,6 +63,9 @@ class GoogleProvider:
 
     def calendar_service(self):
         return build("calendar", "v3", credentials=self.credentials)
+
+    def email_service(self):
+        return build("gmail", "v1", credentials=self.credentials)
 
     def calendar_list(self) -> list[Calendar]:
         logger.debug("Listing calendars")
@@ -297,12 +294,13 @@ class GoogleProvider:
         return mail_message
 
     def email_get_message(self, id: str) -> MailMessage:
-        message = (
-            self.email_service.users()
-            .messages()
-            .get(userId="me", id=id, format="raw")
-            .execute()
-        )
+        with self.email_service() as email_service:
+            message = (
+                email_service.users()
+                .messages()
+                .get(userId="me", id=id, format="raw")
+                .execute()
+            )
 
         logger.trace("Google message", message_id=id, message=message)
 
@@ -313,12 +311,13 @@ class GoogleProvider:
     ) -> list[MailMessage]:
         logger.debug("Listing mail messages", query=query, max_results=max_results)
 
-        response = (
-            self.email_service.users()
-            .messages()
-            .list(userId="me", q=query, maxResults=max_results)
-            .execute()
-        )
+        with self.email_service() as email_service:
+            response = (
+                email_service.users()
+                .messages()
+                .list(userId="me", q=query, maxResults=max_results)
+                .execute()
+            )
 
         logger.trace("Google messages response", response=response)
 
@@ -339,7 +338,8 @@ class GoogleProvider:
     def email_list_drafts(self) -> list[Draft]:
         logger.debug("List mail drafts")
 
-        draft_metadata = self.email_service.users().drafts().list(userId="me").execute()
+        with self.email_service() as email_service:
+            draft_metadata = email_service.users().drafts().list(userId="me").execute()
 
         logger.trace("Google drafts listed", draft_metadata=draft_metadata)
 
@@ -348,12 +348,13 @@ class GoogleProvider:
     def email_get_draft(self, id: str) -> Draft:
         logger.debug("Get mail draft", id=id)
 
-        draft = (
-            self.email_service.users()
-            .drafts()
-            .get(userId="me", id=id, format="raw")
-            .execute()
-        )
+        with self.email_service() as email_service:
+            draft = (
+                email_service.users()
+                .drafts()
+                .get(userId="me", id=id, format="raw")
+                .execute()
+            )
 
         logger.trace("Google draft retrieved", draft=draft)
 
@@ -382,12 +383,13 @@ class GoogleProvider:
 
         encoded_message = self.draft_to_encoded_message(request)
 
-        draft = (
-            self.email_service.users()
-            .drafts()
-            .create(userId="me", body={"message": {"raw": encoded_message}})
-            .execute()
-        )
+        with self.email_service() as email_service:
+            draft = (
+                email_service.users()
+                .drafts()
+                .create(userId="me", body={"message": {"raw": encoded_message}})
+                .execute()
+            )
 
         logger.trace("Google draft created", draft=draft)
 
@@ -401,12 +403,13 @@ class GoogleProvider:
         # encoded message
         encoded_message = self.draft_to_encoded_message(request)
 
-        draft = (
-            self.email_service.users()
-            .drafts()
-            .update(userId="me", id=id, body={"message": {"raw": encoded_message}})
-            .execute()
-        )
+        with self.email_service() as email_service:
+            draft = (
+                email_service.users()
+                .drafts()
+                .update(userId="me", id=id, body={"message": {"raw": encoded_message}})
+                .execute()
+            )
 
         logger.trace("Google draft updated", draft=draft)
 
@@ -415,6 +418,7 @@ class GoogleProvider:
     def email_delete_draft(self, id: str) -> None:
         logger.debug("Delete mail draft", id=id)
 
-        self.email_service.users().drafts().delete(userId="me", id=id).execute()
+        with self.email_service() as email_service:
+            email_service.users().drafts().delete(userId="me", id=id).execute()
 
         logger.trace("Google draft deleted", id=id)
