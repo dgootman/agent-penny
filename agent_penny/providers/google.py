@@ -25,6 +25,7 @@ from agent_penny.types import (
     Draft,
     DraftRequest,
     MailMessage,
+    MailMessageSnippet,
     UpdateDraftRequest,
     UpdateDraftResponse,
 )
@@ -53,6 +54,7 @@ class GoogleProvider:
                 self.calendar_list,
                 self.calendar_list_events,
                 self.email_list_messages,
+                self.email_get_message,
                 self.email_list_drafts,
                 self.email_get_draft,
                 self.email_create_draft,
@@ -294,6 +296,8 @@ class GoogleProvider:
         return mail_message
 
     def email_get_message(self, id: str) -> MailMessage:
+        logger.trace("Getting message", message_id=id)
+
         with self.email_service() as email_service:
             message = (
                 email_service.users()
@@ -308,7 +312,7 @@ class GoogleProvider:
 
     def email_list_messages(
         self, query="in:inbox", max_results=10
-    ) -> list[MailMessage]:
+    ) -> list[MailMessageSnippet]:
         logger.debug("Listing mail messages", query=query, max_results=max_results)
 
         with self.email_service() as email_service:
@@ -319,21 +323,69 @@ class GoogleProvider:
                 .execute()
             )
 
-        logger.trace("Google messages response", response=response)
+            logger.trace("Google messages response", response=response)
 
-        if response["resultSizeEstimate"] == 0:
-            logger.debug("No messages listed")
+            if response["resultSizeEstimate"] == 0:
+                logger.debug("No messages listed")
 
-            assert "messages" not in response or len(response["messages"]) == 0
-            return []
+                assert "messages" not in response or len(response["messages"]) == 0
+                return []
 
-        message_metadata = response["messages"]
+            messages_metadata = response["messages"]
 
-        logger.debug(f"Listed {len(message_metadata)} mail messages")
+            logger.debug(f"Listed {len(messages_metadata)} mail messages")
 
-        logger.trace("Google messages metadata", message_metadata=message_metadata)
+            logger.trace(
+                "Google messages metadata", messages_metadata=messages_metadata
+            )
 
-        return [self.email_get_message(message["id"]) for message in message_metadata]
+            messages: list[MailMessageSnippet] = []
+
+            for message_metadata in messages_metadata:
+                message = (
+                    email_service.users()
+                    .messages()
+                    .get(
+                        userId="me",
+                        id=message_metadata["id"],
+                        format="metadata",
+                        metadataHeaders=["subject", "from", "to"],
+                    )
+                    .execute()
+                )
+
+                logger.trace(
+                    "Google message", message_id=message_metadata["id"], message=message
+                )
+
+                def get_header(name: str) -> str | None:
+                    for header in message["payload"]["headers"]:
+                        if header["name"].lower() == name:
+                            return header["value"]
+                    return None
+
+                def get_required_header(name: str) -> str:
+                    result = get_header(name)
+                    if result:
+                        return result
+                    raise ValueError(f"Message is missing {name} header: {message}")
+
+                message_snippet: MailMessageSnippet = {
+                    "id": message["id"],
+                    "subject": get_required_header("subject"),
+                    "from": get_required_header("from"),
+                    "received": datetime.fromtimestamp(
+                        int(message["internalDate"]) / 1000
+                    ),
+                    "snippet": message["snippet"],
+                }
+
+                if to := get_header("to"):
+                    message_snippet["to"] = to
+
+                messages.append(message_snippet)
+
+            return messages
 
     def email_list_drafts(self) -> list[Draft]:
         logger.debug("List mail drafts")

@@ -27,17 +27,26 @@ class CalendarEvent(CalendarEventAttributes):
     id: str
 
 
-MailMessage = TypedDict(
-    "MailMessage",
+MailHeaders = TypedDict(
+    "MailHeaders",
     {
-        "id": str,
         "subject": NotRequired[str],
         "from": str,
         "to": NotRequired[str],
-        "received": datetime,
-        "content": str,
     },
 )
+
+
+class MailMessage(MailHeaders):
+    id: str
+    received: datetime
+    content: str
+
+
+class MailMessageSnippet(MailHeaders):
+    id: str
+    received: datetime
+    snippet: str
 
 
 class Draft(TypedDict):

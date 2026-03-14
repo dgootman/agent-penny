@@ -13,7 +13,7 @@ from pydantic import TypeAdapter
 
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.providers.google import GoogleProvider
-from agent_penny.types import Calendar, CalendarEvent, MailMessage
+from agent_penny.types import Calendar, CalendarEvent, MailMessageSnippet
 
 pytestmark = pytest.mark.skipif(
     not os.path.exists("client_secrets.json"), reason="No client secrets file"
@@ -142,7 +142,7 @@ def test_email_list_messages(provider: GoogleProvider):
     assert messages
     assert len(messages) == 10
 
-    ta = TypeAdapter(MailMessage)
+    ta = TypeAdapter(MailMessageSnippet)
     for message in messages:
         ta.validate_python(message)
 
