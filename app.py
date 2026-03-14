@@ -23,10 +23,9 @@ from pydantic_ai import (
 from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
 
-from agent_penny import audio, user_data
+from agent_penny import user_data
 from agent_penny.agent import agent_config
 from agent_penny.agent import create as agent_create
-from agent_penny.audio import StreamingTranscriber, text_to_speech
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.chainlit_utils import get_user
 from agent_penny.data import LocalDataLayer
@@ -56,13 +55,15 @@ async def on_app_startup():
     logger.debug("App started")
 
     if audio_input_enabled:
+        from agent_penny.audio import kokoro_model, whisper_model
+
         assert cl_config.features.audio is not None
 
         cl_config.features.audio.enabled = True
 
         # Prime the audio model caches in the background
-        asyncio.create_task(asyncio.to_thread(audio.whisper_model))
-        asyncio.create_task(asyncio.to_thread(audio.kokoro_model))
+        asyncio.create_task(asyncio.to_thread(whisper_model))
+        asyncio.create_task(asyncio.to_thread(kokoro_model))
 
 
 if google_auth_enabled:
@@ -327,6 +328,7 @@ async def on_message(message: cl.Message):
 
 
 if audio_input_enabled:
+    from agent_penny.audio import StreamingTranscriber, text_to_speech
 
     @cl.on_audio_start
     @logfire.instrument()
