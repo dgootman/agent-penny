@@ -10,7 +10,6 @@ from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 
 from agent_penny.chainlit_utils import get_user
-from agent_penny.providers.google import GoogleProvider
 from agent_penny.tools.date import current_date
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
@@ -85,6 +84,8 @@ def create() -> Agent:
     toolsets.append(memory.toolset)
 
     if user.metadata.get("provider") == "google":
+        from agent_penny.providers.google import GoogleProvider
+
         provider = GoogleProvider()
         toolsets.append(provider.toolset)
         # await cl.Message(provider.credentials.to_json()).send()
