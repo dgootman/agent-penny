@@ -13,13 +13,17 @@ class CalendarEventAttributes(TypedDict):
     description: NotRequired[str]
     location: NotRequired[str]
     start_time: datetime | date
-    """Event start date for all-day events or date and time with timezone"""
     end_time: datetime | date
-    """Event end date for all-day events or date and time with timezone"""
     calendar_id: Literal["primary"] | str
 
 
 class CreateCalendarEventRequest(CalendarEventAttributes):
+    """
+    Request to create a calendar event.
+
+    Start and end times are either full dates (for all-day events) or date, time, and timezone (for non-all-day events).
+    """
+
     pass
 
 
