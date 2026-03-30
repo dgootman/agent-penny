@@ -36,6 +36,10 @@ from agent_penny.chainlit_utils import get_user
 from agent_penny.data import LocalDataLayer
 from agent_penny.logging import json_log_sink
 
+if os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true":
+    # HACK: kokoro reinitializes loguru. Import it first then apply the logger config
+    import kokoro  # type: ignore[import-untyped] # noqa: F401
+
 logger.remove()
 logger.add(json_log_sink)
 
