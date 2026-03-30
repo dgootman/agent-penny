@@ -25,7 +25,9 @@ def whisper_model() -> WhisperModel:
 @cache
 @logfire.instrument()
 def kokoro_model() -> KPipeline:
-    return KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")
+    pipeline = KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")
+    pipeline.load_single_voice("af_heart")
+    return pipeline
 
 
 class StreamingTranscriber:
