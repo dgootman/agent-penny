@@ -4,7 +4,6 @@ import os
 from datetime import UTC, datetime
 from typing import Dict, List, Optional
 
-import logfire
 from chainlit.data.base import BaseDataLayer
 from chainlit.element import Element, ElementDict
 from chainlit.step import StepDict
@@ -26,7 +25,7 @@ from . import user_data
 
 
 def entry_point(func):
-    return override(logger.catch(reraise=True)(logfire.instrument()(func)))
+    return override(logger.catch(reraise=True)(func))
 
 
 class GeneratedTitle(BaseModel):
