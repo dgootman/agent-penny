@@ -14,6 +14,7 @@ from agent_penny.tools.date import current_date
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
 from agent_penny.tools.tavily_search import tavily_search
+from agent_penny.tools.web import web_fetch
 
 default_model = os.environ["MODEL"]
 default_thinking = os.environ.get("THINKING") == "true"
@@ -76,7 +77,7 @@ def agent_config(
 def create() -> Agent:
     user = get_user()
 
-    tools: list[Callable] = [current_date]
+    tools: list[Callable] = [current_date, web_fetch]
 
     toolsets: list[AbstractToolset] = []
 
