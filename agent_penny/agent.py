@@ -15,6 +15,7 @@ from agent_penny.capabilities.scheduling import SchedulingCapability
 from agent_penny.capabilities.skills import SkillsCapability
 from agent_penny.capabilities.telegram import TelegramCapability
 from agent_penny.chainlit_utils import get_user
+from agent_penny.models.codex import CodexOpenAIResponsesModel
 from agent_penny.tools.date import current_date
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
@@ -46,6 +47,9 @@ def agent_config(
         else (model.system, model.model_name)
     )
 
+    if provider == "openai-codex":
+        model = CodexOpenAIResponsesModel(model_id)
+
     if thinking:
         # See: https://ai.pydantic.dev/thinking/
         # TODO: Make model settings for thinking configurable
@@ -71,6 +75,11 @@ def agent_config(
         elif provider == "openai":
             # Upgrade to the OpenAI Responses API: https://platform.openai.com/docs/guides/migrate-to-responses
             model = f"openai-responses:{model_id}"
+            model_settings = OpenAIResponsesModelSettings(
+                openai_reasoning_effort="low",
+                openai_reasoning_summary="detailed",
+            )
+        elif provider == "openai-codex":
             model_settings = OpenAIResponsesModelSettings(
                 openai_reasoning_effort="low",
                 openai_reasoning_summary="detailed",
