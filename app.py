@@ -140,8 +140,9 @@ async def render_settings():
     env_vars_by_provider = {
         "anthropic": "ANTHROPIC_API_KEY",
         "bedrock": "BEDROCK_ENABLE",  # Bedrock uses AWS credentials, which have different ways of being provisioned
-        "openai": "OPENAI_API_KEY",
         "google-gla": "GOOGLE_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "openai-codex": "OPENAI_CODEX_ENABLE",
     }
 
     available_models_by_provider = {
@@ -167,6 +168,11 @@ async def render_settings():
             "openai:gpt-5.4",
             "openai:gpt-5.4-mini",
             "openai:gpt-5.4-nano",
+        ],
+        "openai-codex": [  # https://developers.openai.com/codex/models
+            "openai-codex:gpt-5.4",
+            "openai-codex:gpt-5.4-mini",
+            "openai-codex:gpt-5.3-codex",
         ],
     }
 
