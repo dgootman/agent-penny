@@ -16,6 +16,7 @@ from markitdown import MarkItDown, StreamInfo
 from pydantic_ai import FunctionToolset, ModelRetry
 
 from agent_penny.chainlit_utils import get_user
+from agent_penny.tools.approval import ApprovalRequiredToolset
 from agent_penny.types import (
     Calendar,
     CalendarEvent,
@@ -50,20 +51,29 @@ class GoogleProvider:
             token_uri="https://oauth2.googleapis.com/token",
         )
 
-        self.toolset = FunctionToolset(
-            [
-                self.calendar_create_event,
-                self.calendar_update_event,
-                self.calendar_list,
-                self.calendar_list_events,
-                self.email_list_messages,
-                self.email_get_message,
-                self.email_list_drafts,
-                self.email_get_draft,
-                self.email_create_draft,
-                self.email_update_draft,
-                self.email_delete_draft,
-            ]
+        self.toolset = ApprovalRequiredToolset(
+            FunctionToolset(
+                [
+                    self.calendar_create_event,
+                    self.calendar_update_event,
+                    self.calendar_list,
+                    self.calendar_list_events,
+                    self.email_list_messages,
+                    self.email_get_message,
+                    self.email_list_drafts,
+                    self.email_get_draft,
+                    self.email_create_draft,
+                    self.email_update_draft,
+                    self.email_delete_draft,
+                ]
+            ),
+            approval_required_func=lambda ctx, tool_def, tool_args: (
+                tool_def.name
+                in [
+                    "calendar_create_event",
+                    "calendar_update_event",
+                ]
+            ),
         )
 
     def calendar_service(self):
