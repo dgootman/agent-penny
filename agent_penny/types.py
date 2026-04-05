@@ -27,6 +27,16 @@ class CreateCalendarEventRequest(CalendarEventAttributes):
     pass
 
 
+class UpdateCalendarEventRequest(CalendarEventAttributes):
+    """
+    Request to update a calendar event.
+
+    Start and end times are either full dates (for all-day events) or date, time, and timezone (for non-all-day events).
+    """
+
+    id: str
+
+
 class CalendarEvent(CalendarEventAttributes):
     id: str
 

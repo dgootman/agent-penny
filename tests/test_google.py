@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 import chainlit as cl
 import pytest
+from dateutil.relativedelta import relativedelta
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import-untyped]
@@ -63,16 +64,6 @@ def provider() -> GoogleProvider:
             },
         )
     )
-
-
-requires_draft_id = pytest.mark.skipif(
-    "TEST_GOOGLE_DRAFT_ID" not in os.environ, reason="TEST_GOOGLE_DRAFT_ID not defined"
-)
-
-
-@pytest.fixture
-def draft_id() -> str:
-    return os.environ["TEST_GOOGLE_DRAFT_ID"]
 
 
 def test_calendar_list(provider: GoogleProvider):
@@ -136,6 +127,31 @@ def test_calendar_create_event(provider: GoogleProvider):
             ).execute()
 
 
+def test_calendar_update_event(provider: GoogleProvider):
+    if "TEST_GOOGLE_EVENT_ID" not in os.environ:
+        pytest.skip("TEST_GOOGLE_EVENT_ID not defined")
+
+    event_id = os.environ["TEST_GOOGLE_EVENT_ID"]
+
+    tz = ZoneInfo("America/Vancouver")
+    last_month = datetime.now(tz) - relativedelta(months=1)
+
+    event = provider.calendar_update_event(
+        {
+            "id": event_id,
+            "name": "Test Event",
+            "start_time": last_month,
+            "end_time": last_month + timedelta(hours=1),
+            "description": f"Updated: {datetime.now().isoformat()}",
+            "calendar_id": "primary",
+        }
+    )
+
+    assert event
+    ta = TypeAdapter(CalendarEvent)
+    ta.validate_python(event)
+
+
 def test_email_list_messages(provider: GoogleProvider):
     messages = provider.email_list_messages(max_results=10)
 
@@ -162,7 +178,14 @@ def test_email_list_drafts(provider: GoogleProvider):
     logger.debug("Drafts", drafts=drafts)
 
 
-@requires_draft_id
+@pytest.fixture
+def draft_id() -> str:
+    if "TEST_GOOGLE_DRAFT_ID" not in os.environ:
+        pytest.skip("TEST_GOOGLE_DRAFT_ID not defined")
+
+    return os.environ["TEST_GOOGLE_DRAFT_ID"]
+
+
 def test_email_get_draft(provider: GoogleProvider, draft_id: str):
     draft = provider.email_get_draft(draft_id)
 
@@ -171,7 +194,6 @@ def test_email_get_draft(provider: GoogleProvider, draft_id: str):
     logger.debug("Draft", draft=draft)
 
 
-@requires_draft_id
 def test_email_update_draft(provider: GoogleProvider, draft_id: str):
     draft = provider.email_update_draft(
         draft_id,

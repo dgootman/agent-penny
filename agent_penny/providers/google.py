@@ -19,6 +19,7 @@ from agent_penny.chainlit_utils import get_user
 from agent_penny.types import (
     Calendar,
     CalendarEvent,
+    CalendarEventAttributes,
     CreateCalendarEventRequest,
     CreateDraftRequest,
     CreateDraftResponse,
@@ -26,6 +27,7 @@ from agent_penny.types import (
     DraftRequest,
     MailMessage,
     MailMessageSnippet,
+    UpdateCalendarEventRequest,
     UpdateDraftRequest,
     UpdateDraftResponse,
 )
@@ -51,6 +53,7 @@ class GoogleProvider:
         self.toolset = FunctionToolset(
             [
                 self.calendar_create_event,
+                self.calendar_update_event,
                 self.calendar_list,
                 self.calendar_list_events,
                 self.email_list_messages,
@@ -101,7 +104,7 @@ class GoogleProvider:
 
         return calendars
 
-    def google_event_adapter(
+    def _google_event_adapter(
         self, event, calendar_id: str, tz: tzinfo | None
     ) -> CalendarEvent:
         def date_adapter(google_date: dict[str, str]) -> datetime | date:
@@ -179,12 +182,28 @@ class GoogleProvider:
             logger.trace("Google calendar events", calendar_events=calendar_events)
 
             events = [
-                self.google_event_adapter(event, calendar_id, tz)
+                self._google_event_adapter(event, calendar_id, tz)
                 for calendar_id, google_events in calendar_events.items()
                 for event in google_events
             ]
 
         return sorted(events, key=lambda event: event["start_time"].isoformat())
+
+    def _calendar_request_adapter(self, request: CalendarEventAttributes):
+        def date_adapter(value: date | datetime) -> dict[str, str]:
+            if isinstance(value, datetime):
+                return {"dateTime": value.isoformat()}
+            if isinstance(value, date):
+                return {"date": value.isoformat()}
+            raise ValueError(f"Invalid date: {value}")
+
+        return {
+            "summary": request["name"],
+            "location": request.get("location"),
+            "description": request.get("description"),
+            "start": date_adapter(request["start_time"]),
+            "end": date_adapter(request["end_time"]),
+        }
 
     def calendar_create_event(
         self, request: CreateCalendarEventRequest
@@ -197,20 +216,7 @@ class GoogleProvider:
             else None
         )
 
-        def date_adapter(value: date | datetime) -> dict[str, str]:
-            if isinstance(value, datetime):
-                return {"dateTime": value.isoformat()}
-            if isinstance(value, date):
-                return {"date": value.isoformat()}
-            raise ValueError(f"Invalid date: {value}")
-
-        google_request = {
-            "summary": request["name"],
-            "location": request.get("location"),
-            "description": request.get("description"),
-            "start": date_adapter(request["start_time"]),
-            "end": date_adapter(request["end_time"]),
-        }
+        google_request = self._calendar_request_adapter(request)
 
         logger.trace("Inserting Google calendar event", google_request=google_request)
 
@@ -223,9 +229,43 @@ class GoogleProvider:
 
         logger.trace("Inserted Google calendar event", google_event=google_event)
 
-        event = self.google_event_adapter(google_event, request["calendar_id"], tz)
+        event = self._google_event_adapter(google_event, request["calendar_id"], tz)
 
         logger.info("Added calendar event", event=event)
+
+        return event
+
+    def calendar_update_event(
+        self, request: UpdateCalendarEventRequest
+    ) -> CalendarEvent:
+        logger.debug("Updating calendar event", request=request)
+
+        tz = (
+            request["start_time"].tzinfo
+            if isinstance(request["start_time"], datetime)
+            else None
+        )
+
+        google_request = self._calendar_request_adapter(request)
+
+        logger.trace("Updating Google calendar event", google_request=google_request)
+
+        with self.calendar_service() as calendar_service:
+            google_event = (
+                calendar_service.events()
+                .update(
+                    calendarId=request["calendar_id"],
+                    eventId=request["id"],
+                    body=google_request,
+                )
+                .execute()
+            )
+
+        logger.trace("Updated Google calendar event", google_event=google_event)
+
+        event = self._google_event_adapter(google_event, request["calendar_id"], tz)
+
+        logger.info("Updated calendar event", event=event)
 
         return event
 
