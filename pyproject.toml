@@ -60,3 +60,9 @@ check_untyped_defs = true
 [tool.pytest]
 addopts = ["-v", "--durations=0", "--cov=app", "--cov=agent_penny"]
 env_files = [".env", ".test.env"]
+
+[tool.ruff.lint]
+extend-select = [
+    # isort
+    "I",
+]
