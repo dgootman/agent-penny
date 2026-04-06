@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import chainlit as cl
 import pytest
 from dateutil.relativedelta import relativedelta
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import-untyped]
@@ -30,17 +31,19 @@ def get_credentials() -> Credentials:
     if os.path.exists("credentials.json"):
         creds = Credentials.from_authorized_user_file("credentials.json", SCOPES)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+    if creds and not creds.valid and creds.refresh_token:
+        try:
             creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                "client_secrets.json", SCOPES
-            )
-            creds = flow.run_local_server(
-                port=8137,
-                prompt="consent",  # Prompt is required to get a refresh token
-            )
+        except RefreshError as e:
+            logger.warning("Credential refresh failed", e)
+            creds = None
+
+    if not creds:
+        flow = InstalledAppFlow.from_client_secrets_file("client_secrets.json", SCOPES)
+        creds = flow.run_local_server(
+            port=8137,
+            prompt="consent",  # Prompt is required to get a refresh token
+        )
 
         with open("credentials.json", "w") as token:
             token.write(creds.to_json())
