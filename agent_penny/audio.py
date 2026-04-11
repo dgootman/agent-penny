@@ -42,13 +42,15 @@ class StreamingTranscriber:
             else lambda audio: audio
         )
 
-    def pcm_to_wave(self, pcm: bytes) -> bytes:
+    def pcm_to_wave(self, pcm: bytes) -> BytesIO:
         wave_buffer = BytesIO()
         with wave.open(wave_buffer, "wb") as f:
             f.setparams((1, 2, self.sample_rate, 0, "NONE", "NONE"))
             f.writeframes(pcm)
 
-        return wave_buffer.getvalue()
+        wave_buffer.seek(0)
+
+        return wave_buffer
 
     async def add_chunk(self, chunk: bytes) -> str | None:
         audio, _ = torchaudio.load(self.pcm_to_wave(chunk))
@@ -85,7 +87,7 @@ class StreamingTranscriber:
         with logfire.span("whisper_transcribe"):
             segments, info = await asyncio.to_thread(
                 lambda: whisper_model().transcribe(
-                    BytesIO(wave_data), language="en", word_timestamps=False
+                    wave_data, language="en", word_timestamps=False
                 )
             )
 

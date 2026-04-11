@@ -267,7 +267,7 @@ async def on_settings_update(chat_settings: dict[str, Any]):
             chat_settings["model"] = custom_model
 
         # TODO: Validate that chat settings match the user-setting structure
-        user_data.save_settings(chat_settings)  # type: ignore[arg-type]
+        user_data.save_settings(chat_settings)  # type: ignore[arg-type,ty:invalid-argument-type]
 
         # Custom model handling affects setting rendering
         # by setting the model to blank if a custom model is provided

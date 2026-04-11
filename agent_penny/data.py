@@ -111,11 +111,11 @@ class LocalDataLayer(BaseDataLayer):
             with open(data_file) as f:
                 return json.load(f)
         else:
-            return {  # type: ignore[typeddict-item]
+            return {
                 "id": thread_id,
                 "steps": [],
                 "createdAt": datetime.now(UTC).isoformat(),
-            }
+            }  # type: ignore[typeddict-item,ty:missing-typed-dict-key,ty:invalid-return-type]
 
     def save_thread(self, thread: ThreadDict):
         data_file = self.threads_dir / f"{thread['id']}.json"
@@ -186,7 +186,7 @@ class LocalDataLayer(BaseDataLayer):
             threads = [
                 t
                 for t in threads
-                if filters.search.lower() in t["name"].lower()  # type: ignore[union-attr]
+                if filters.search.lower() in t["name"].lower()  # type: ignore[union-attr,ty:unresolved-attribute]
             ]
 
         return PaginatedResponse(

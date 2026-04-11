@@ -1,8 +1,8 @@
 import os
-from typing import Callable, TypedDict
+from typing import Any, Callable, TypedDict
 
 from loguru import logger
-from pydantic_ai import AbstractToolset, Agent, ModelSettings
+from pydantic_ai import AbstractToolset, Agent, ModelSettings, Tool
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.models.anthropic import AnthropicModelSettings
 from pydantic_ai.models.bedrock import BedrockModelSettings
@@ -41,7 +41,7 @@ def agent_config(
 
         if llm_provider == "anthropic":
             model_settings = AnthropicModelSettings(
-                anthropic_thinking={"type": "enabled", "budget_tokens": 1024},
+                anthropic_thinking={"type": "enabled", "budget_tokens": 1024},  # type: ignore[ty:invalid-argument-type]
             )
         elif llm_provider == "bedrock":
             if model_id.startswith("us.anthropic."):
@@ -77,9 +77,9 @@ def agent_config(
 def create() -> Agent:
     user = get_user()
 
-    tools: list[Callable] = [current_date, web_fetch]
+    tools: list[Callable[..., Any] | Tool] = [current_date, web_fetch]
 
-    toolsets: list[AbstractToolset] = []
+    toolsets: list[AbstractToolset[Any]] = []
 
     memory = MemoryProvider()
     toolsets.append(memory.toolset)

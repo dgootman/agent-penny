@@ -14,7 +14,7 @@ class MemoryProvider:
             [
                 self.load_memory,
                 self.save_memory,
-            ]
+            ]  # type: ignore[ty:invalid-argument-type]
         )
 
     def load_memory(self):

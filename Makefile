@@ -9,7 +9,7 @@ SHELL := bash
 all: build test
 
 .PHONY: build
-build: sync lint format
+build: sync lint format typecheck
 
 .PHONY: lint
 lint:
@@ -21,6 +21,7 @@ format:
 
 .PHONY: typecheck
 typecheck:
+	uv run ty check
 	uv run mypy app.py agent_penny
 
 .PHONY: dev

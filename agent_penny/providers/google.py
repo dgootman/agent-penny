@@ -65,7 +65,7 @@ class GoogleProvider:
                     self.email_create_draft,
                     self.email_update_draft,
                     self.email_delete_draft,
-                ]
+                ]  # type: ignore[ty:invalid-argument-type]
             ),
             approval_required_func=lambda ctx, tool_def, tool_args: (
                 tool_def.name
@@ -87,28 +87,29 @@ class GoogleProvider:
 
         with self.calendar_service() as calendar_service:
             response = calendar_service.calendarList().list().execute()
-            calendars = response["items"]
+            google_calendars = response["items"]
 
             while page_token := response.get("nextPageToken"):
                 response = (
                     calendar_service.calendarList().list(pageToken=page_token).execute()
                 )
-                calendars += response["items"]
+                google_calendars += response["items"]
 
-        logger.trace("Google calendars", calendars=calendars)
+        logger.trace("Google calendars", google_calendars=google_calendars)
 
-        calendars = [
-            Calendar(
-                id=calendar["id"],
-                name=calendar.get("summaryOverride") or calendar["summary"],
-            )
-            | (
-                {"description": calendar["description"]}
-                if calendar.get("description")
-                else {}
-            )
-            for calendar in calendars
-        ]
+        def adapt(google_calendar) -> Calendar:
+            calendar: Calendar = {
+                "id": google_calendar["id"],
+                "name": google_calendar.get("summaryOverride")
+                or google_calendar["summary"],
+            }
+
+            if description := calendar.get("description"):
+                calendar["description"] = description
+
+            return calendar
+
+        calendars = [adapt(calendar) for calendar in google_calendars]
 
         logger.debug("Listed calendars", calendars=calendars)
 
@@ -136,7 +137,7 @@ class GoogleProvider:
 
         for optional_field in ["description", "location"]:
             if event.get(optional_field):
-                calendar_event[optional_field] = event[optional_field]  # type: ignore[literal-required]
+                calendar_event[optional_field] = event[optional_field]  # type: ignore[literal-required,ty:invalid-key]
 
         return calendar_event
 
@@ -296,14 +297,14 @@ class GoogleProvider:
 
                     # TODO: Replace fallback with charset inference based on charset in payload
                     try:
-                        return decoded_bytes.decode()  # type: ignore[union-attr]
+                        return decoded_bytes.decode()  # type: ignore[union-attr,ty:unresolved-attribute]
                     except UnicodeDecodeError:
-                        return decoded_bytes.decode("latin-1")  # type: ignore[union-attr]
+                        return decoded_bytes.decode("latin-1")  # type: ignore[union-attr,ty:unresolved-attribute]
 
                 payload = text_part.get_payload()
                 if isinstance(payload, str):
                     return payload
-                return text_part.get_payload(decode=True).decode()  # type: ignore[union-attr]
+                return text_part.get_payload(decode=True).decode()  # type: ignore[union-attr,ty:unresolved-attribute]
 
             html_part = next(
                 (p for p in payloads if p.get_content_type() == "text/html"),
@@ -311,7 +312,7 @@ class GoogleProvider:
             )
             if html_part:
                 return md.convert_stream(
-                    BytesIO(html_part.get_payload(decode=True)),  # type: ignore[arg-type]
+                    BytesIO(html_part.get_payload(decode=True)),  # type: ignore[arg-type,ty:invalid-argument-type]
                     stream_info=StreamInfo(
                         mimetype=html_part.get_content_type(),
                         charset=html_part.get_content_charset(),
