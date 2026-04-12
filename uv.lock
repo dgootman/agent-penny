@@ -34,6 +34,7 @@ dependencies = [
     { name = "loguru" },
     { name = "markitdown", extra = ["pdf"] },
     { name = "perplexityai" },
+    { name = "pydantic-ai-skills" },
     { name = "pydantic-ai-slim", extra = ["anthropic", "bedrock", "duckduckgo", "google", "openai"] },
     { name = "python-slugify" },
     { name = "silero-vad" },
@@ -60,6 +61,7 @@ dev = [
     { name = "ruff" },
     { name = "ty" },
     { name = "types-python-dateutil" },
+    { name = "types-pyyaml" },
     { name = "types-requests" },
 ]
 
@@ -75,6 +77,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "markitdown", extras = ["pdf"], specifier = ">=0.1.4" },
     { name = "perplexityai", specifier = ">=0.26.0" },
+    { name = "pydantic-ai-skills", specifier = ">=0.6.0" },
     { name = "pydantic-ai-slim", extras = ["anthropic", "bedrock", "duckduckgo", "google", "openai"], specifier = ">=1.71.0" },
     { name = "python-slugify", specifier = ">=8.0.4" },
     { name = "silero-vad", specifier = ">=6.2.0" },
@@ -99,6 +102,7 @@ dev = [
     { name = "ruff", specifier = ">=0.14.14" },
     { name = "ty", specifier = ">=0.0.29" },
     { name = "types-python-dateutil", specifier = ">=2.9.0.20260402" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
     { name = "types-requests", specifier = ">=2.33.0.20260402" },
 ]
 
@@ -3635,6 +3639,20 @@ wheels = [
 ]
 
 [[package]]
+name = "pydantic-ai-skills"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "pydantic-ai-slim" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f1/a8/66acbc7776d32476fa68fc87bbeeae8d384ce436f9add01ba848d63ec8d4/pydantic_ai_skills-0.6.0.tar.gz", hash = "sha256:8a583336bf5df3f920aaf5c01a6b34ce5de6d470699240f9af7518ee8b3b447f", size = 9000476, upload-time = "2026-03-26T03:40:59.007Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e5/29/2e42889a2712df57eef7cfd3b2dcd448816292a36072bdabe6edcd35065a/pydantic_ai_skills-0.6.0-py3-none-any.whl", hash = "sha256:76aa54f5ad91e104205251a9b350c9e5ec69f76ef9d183c942ad3830a37fed7c", size = 51229, upload-time = "2026-03-26T03:40:57.217Z" },
+]
+
+[[package]]
 name = "pydantic-ai-slim"
 version = "1.80.0"
 source = { registry = "https://pypi.org/simple" }
@@ -5113,6 +5131,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a7/30/c5d9efbff5422b20c9551dc5af237d1ab0c3d33729a9b3239a876ca47dd4/types_python_dateutil-2.9.0.20260402.tar.gz", hash = "sha256:a980142b9966713acb382c467e35c5cc4208a2f91b10b8d785a0ae6765df6c0b", size = 16941, upload-time = "2026-04-02T04:18:35.834Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e6/d7/fe753bf8329c8c3c1addcba1d2bf716c33898216757abb24f8b80f82d040/types_python_dateutil-2.9.0.20260402-py3-none-any.whl", hash = "sha256:7827e6a9c93587cc18e766944254d1351a2396262e4abe1510cbbd7601c5e01f", size = 18436, upload-time = "2026-04-02T04:18:34.806Z" },
+]
+
+[[package]]
+name = "types-pyyaml"
+version = "6.0.12.20260408"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/74/73/b759b1e413c31034cc01ecdfb96b38115d0ab4db55a752a3929f0cd449fd/types_pyyaml-6.0.12.20260408.tar.gz", hash = "sha256:92a73f2b8d7f39ef392a38131f76b970f8c66e4c42b3125ae872b7c93b556307", size = 17735, upload-time = "2026-04-08T04:30:50.974Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1c/f0/c391068b86abb708882c6d75a08cd7d25b2c7227dab527b3a3685a3c635b/types_pyyaml-6.0.12.20260408-py3-none-any.whl", hash = "sha256:fbc42037d12159d9c801ebfcc79ebd28335a7c13b08a4cfbc6916df78fee9384", size = 20339, upload-time = "2026-04-08T04:30:50.113Z" },
 ]
 
 [[package]]

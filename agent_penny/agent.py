@@ -9,6 +9,7 @@ from pydantic_ai.models.bedrock import BedrockModelSettings
 from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 
+from agent_penny.capabilities.skills import SkillsCapability
 from agent_penny.chainlit_utils import get_user
 from agent_penny.tools.date import current_date
 from agent_penny.tools.memory import MemoryProvider
@@ -113,6 +114,7 @@ def create() -> Agent:
         **config,
         tools=tools,
         toolsets=toolsets,
+        capabilities=[SkillsCapability()],
         system_prompt=[
             f"You know the following from previous conversations: {memory.load_memory()}"
         ],

@@ -15,6 +15,7 @@ dependencies = [
     "loguru>=0.7.3",
     "markitdown[pdf]>=0.1.4",
     "perplexityai>=0.26.0",
+    "pydantic-ai-skills>=0.6.0",
     "pydantic-ai-slim[anthropic,bedrock,duckduckgo,google,openai]>=1.71.0",
     "python-slugify>=8.0.4",
     "silero-vad>=6.2.0",
@@ -39,6 +40,7 @@ dev = [
     "ruff>=0.14.14",
     "ty>=0.0.29",
     "types-python-dateutil>=2.9.0.20260402",
+    "types-pyyaml>=6.0.12.20260408",
     "types-requests>=2.33.0.20260402",
 ]
 
