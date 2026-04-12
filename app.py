@@ -29,7 +29,6 @@ from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
 
 from agent_penny import user_data
-from agent_penny.agent import agent_config
 from agent_penny.agent import create as agent_create
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.chainlit_utils import get_user
@@ -274,6 +273,10 @@ async def on_settings_update(chat_settings: dict[str, Any]):
         if custom_model:
             await render_settings()
 
+        # Recreate the agent
+        agent = agent_create()
+        cl.user_session.set("agent", agent)
+
 
 @cl.on_message
 @logger.catch
@@ -300,25 +303,10 @@ async def on_message(message: cl.Message):
                 message_history=message_history,
             )
 
-            if (
-                "model" in user_settings and user_settings["model"] != default_model
-            ) or (
-                "thinking" in user_settings
-                and user_settings["thinking"] != default_thinking
-            ):
-                config = agent_config(
-                    user_settings.get("model"), user_settings.get("thinking")
-                )
-                stream = agent.run_stream_events(
-                    message.content,
-                    message_history=message_history,
-                    **config,
-                )
-            else:
-                stream = agent.run_stream_events(
-                    message.content,
-                    message_history=message_history,
-                )
+            stream = agent.run_stream_events(
+                message.content,
+                message_history=message_history,
+            )
 
             async for event in stream:
                 logger.trace("Event received", event=event)
