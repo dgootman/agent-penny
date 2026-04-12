@@ -1,4 +1,3 @@
-import os
 import sys
 import wave
 from pathlib import Path
@@ -7,10 +6,25 @@ import pytest
 from loguru import logger
 
 
+@pytest.fixture
+def kokoro():
+    from agent_penny.audio import kokoro_model
+
+    return kokoro_model()
+
+
+@pytest.fixture
+def whisper(monkeypatch: pytest.MonkeyPatch):
+    from agent_penny.audio import whisper_model
+
+    monkeypatch.setenv("WHISPER_MODEL", "small.en")
+
+    return whisper_model()
+
+
 async def transcribe(file: str) -> str:
     from agent_penny.audio import StreamingTranscriber
 
-    os.environ["WHISPER_MODEL"] = "small.en"
     with wave.open(file, "rb") as f:
         audio = f.readframes(sys.maxsize)
 
@@ -28,7 +42,7 @@ async def transcribe(file: str) -> str:
 
 
 @pytest.mark.asyncio
-async def test_speech_to_text():
+async def test_speech_to_text(whisper):
     text = await transcribe("tests/test_audio.wav")
 
     assert "this is a test" in text.lower()
@@ -38,7 +52,7 @@ async def test_speech_to_text():
 
 
 @pytest.mark.asyncio
-async def test_end_to_end(tmp_path: Path):
+async def test_end_to_end(tmp_path: Path, kokoro, whisper):
     from agent_penny.audio import text_to_speech
 
     wave_file = str(tmp_path / "output.wav")
