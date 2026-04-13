@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
-from textwrap import dedent
+from textwrap import dedent, shorten
 from typing import Any, override
 
+import chainlit as cl
 import yaml
+from chainlit.context import ChainlitContextException
+from loguru import logger
 from pydantic import BaseModel, ConfigDict
-from pydantic_ai import ModelRetry, Tool
+from pydantic_ai import ModelRetry, RunContext, Tool
 from pydantic_ai.capabilities import AbstractCapability
 from pydantic_ai.toolsets import AgentToolset, FunctionToolset
 from pydantic_ai_skills.directory import parse_skill_md
@@ -54,20 +57,65 @@ class SkillsCapability(AbstractCapability[Any]):
         self.skills_path = (
             Path(skills_path) if skills_path else user_data.path("skills")
         )
+        self.update_chainlit_commands()
+
+    def update_chainlit_commands(self):
+        # TODO: Try to decouple the capability from Chainlit to make it reusable
+        try:
+            loop = cl.context.loop
+        except ChainlitContextException as e:
+            logger.debug("Chainlit isn't running", e)
+            return None
+
+        skill_catalog = self.list_skills()
+
+        if loop:
+            loop.create_task(
+                cl.context.emitter.set_commands(
+                    [
+                        {
+                            "id": skill.name,
+                            "icon": "scroll",
+                            "description": shorten(
+                                skill.description or skill.name, 125, placeholder="..."
+                            ),
+                            "button": False,
+                            "persistent": True,
+                        }
+                        for skill in skill_catalog.available_skills
+                    ]
+                )
+            )
 
     @override
     def get_instructions(self):
-        skill_catalog = self.list_skills()
+        async def _get_instructions(ctx: RunContext[Any]) -> str | None:
+            # TODO: Consider caching the instructions since this is invoked at every agent turn
+            if (
+                ctx.metadata
+                and (skill_name := ctx.metadata.get("skill_name"))
+                and self.resolve_skill_path(skill_name).exists()
+            ):
+                skill = self.activate_skill(skill_name)
 
-        if not skill_catalog.available_skills:
-            return None
+                return dedent("""\
+                    The following skill is loaded and ready to guide you.
 
-        return dedent("""\
-            The following skills provide specialized instructions for specific tasks.
-            When a task matches a skill's description, call the activate_skill tool
-            with the skill's name to load its full instructions.
+                    """) + skill.model_dump_json(indent=2, exclude_none=True)
+            else:
+                skill_catalog = self.list_skills()
 
-            """) + skill_catalog.model_dump_json(indent=2, exclude_none=True)
+                if not skill_catalog.available_skills:
+                    return None
+
+                return dedent("""\
+                    The following skills provide specialized instructions for specific tasks.
+                    When a task matches a skill's description, call the activate_skill tool
+                    with the skill's name to load its full instructions.
+
+                    """) + skill_catalog.model_dump_json(indent=2, exclude_none=True)
+
+        return _get_instructions
 
     @override
     def get_toolset(self) -> AgentToolset[Any] | None:
@@ -101,7 +149,7 @@ class SkillsCapability(AbstractCapability[Any]):
 
         return SkillCatalog(available_skills=available_skills)
 
-    def resolve_skill(self, name: str, should_exist: bool) -> Path:
+    def resolve_skill_path(self, name: str):
         if not name or "/" in name:
             raise SecurityError(f"Path traversal attempted for skill: {name}")
 
@@ -109,6 +157,11 @@ class SkillsCapability(AbstractCapability[Any]):
 
         if self.skills_path.resolve() not in skill_path.resolve().parents:
             raise SecurityError(f"Path traversal attempted for skill: {name}")
+
+        return skill_path.resolve()
+
+    def resolve_skill(self, name: str, should_exist: bool) -> Path:
+        skill_path = self.resolve_skill_path(name)
 
         if should_exist and not skill_path.exists():
             raise ModelRetry(f"Skill does not exist: {name}")
@@ -162,6 +215,8 @@ class SkillsCapability(AbstractCapability[Any]):
 
         skill_path.write_text(self.skill_content_to_txt(skill))
 
+        self.update_chainlit_commands()
+
     def update_skill(self, skill: SkillContent) -> None:
         skill_path = self.resolve_skill(skill.name, True)
 
@@ -171,3 +226,5 @@ class SkillsCapability(AbstractCapability[Any]):
         skill_path = self.resolve_skill(name, True)
 
         skill_path.unlink()
+
+        self.update_chainlit_commands()

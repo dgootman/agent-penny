@@ -299,6 +299,7 @@ async def on_message(message: cl.Message):
             stream = agent.run_stream_events(
                 message.content,
                 message_history=message_history,
+                metadata={"skill_name": message.command},
             )
 
             async for event in stream:
