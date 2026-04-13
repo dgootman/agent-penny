@@ -7,10 +7,10 @@ from loguru import logger
 
 
 @pytest.fixture
-def kokoro():
-    from agent_penny.audio import kokoro_model
+def piper():
+    from agent_penny.audio import piper_model
 
-    return kokoro_model()
+    return piper_model()
 
 
 @pytest.fixture
@@ -52,17 +52,15 @@ async def test_speech_to_text(whisper):
 
 
 @pytest.mark.asyncio
-async def test_end_to_end(tmp_path: Path, kokoro, whisper):
+async def test_end_to_end(tmp_path: Path, piper, whisper):
     from agent_penny.audio import text_to_speech
 
     wave_file = str(tmp_path / "output.wav")
 
     speech = text_to_speech("Hello! My name is Agent Penny")
-    chunk = next(speech)
     with wave.open(wave_file, "wb") as f:
         f.setparams((1, 2, 16000, 0, "NONE", "NONE"))
-        f.writeframes(chunk)
-    assert next(speech, None) is None
+        f.writeframes(speech)
 
     text = await transcribe(wave_file)
 

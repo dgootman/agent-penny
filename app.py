@@ -1,4 +1,3 @@
-import asyncio
 import getpass
 import os
 from typing import Any
@@ -35,10 +34,6 @@ from agent_penny.chainlit_utils import get_user
 from agent_penny.data import LocalDataLayer
 from agent_penny.logging import json_log_sink
 
-if os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true":
-    # HACK: kokoro reinitializes loguru. Import it first then apply the logger config
-    import kokoro  # type: ignore[import-untyped] # noqa: F401
-
 logger.remove()
 logger.add(json_log_sink)
 
@@ -64,15 +59,13 @@ async def on_app_startup():
     logger.debug("App started")
 
     if audio_input_enabled:
-        from agent_penny.audio import kokoro_model, whisper_model
+        from agent_penny import audio
 
         assert cl_config.features.audio is not None
 
         cl_config.features.audio.enabled = True
 
-        # Prime the audio model caches in the background
-        asyncio.create_task(asyncio.to_thread(whisper_model))
-        asyncio.create_task(asyncio.to_thread(kokoro_model))
+        audio.startup()
 
 
 if google_auth_enabled:
@@ -394,14 +387,13 @@ if audio_input_enabled:
             cl.user_session.set("track_id", str(track_id))
 
             speech = text_to_speech(last_message.text)
-            for chunk in speech:
-                await cl.context.emitter.send_audio_chunk(
-                    cl.OutputAudioChunk(
-                        mimeType="pcm16",
-                        data=chunk,
-                        track=track_id,
-                    )
+            await cl.context.emitter.send_audio_chunk(
+                cl.OutputAudioChunk(
+                    mimeType="pcm16",
+                    data=speech,
+                    track=track_id,
                 )
+            )
 
     @cl.on_audio_chunk
     async def on_audio_chunk(chunk: cl.InputAudioChunk):

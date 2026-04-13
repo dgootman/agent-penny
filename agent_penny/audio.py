@@ -4,13 +4,16 @@ import sys
 import wave
 from functools import cache
 from io import BytesIO
+from pathlib import Path
 
 import logfire
+import numpy
 import torch
 import torchaudio  # type: ignore[import-untyped]
 from faster_whisper import WhisperModel  # type: ignore[import-untyped]
-from kokoro import KPipeline  # type: ignore[import-untyped]
 from loguru import logger
+from piper import PiperVoice
+from piper.download_voices import download_voice
 from silero_vad import VADIterator, load_silero_vad  # type: ignore[import-untyped]
 from torchaudio.transforms import Resample  # type: ignore[import-untyped]
 from torchcodec.encoders import AudioEncoder  # type: ignore[import-untyped]
@@ -24,10 +27,23 @@ def whisper_model() -> WhisperModel:
 
 @cache
 @logfire.instrument()
-def kokoro_model() -> KPipeline:
-    pipeline = KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")
-    pipeline.load_single_voice("af_heart")
-    return pipeline
+def piper_model() -> PiperVoice:
+    voice = os.environ.get("PIPER_MODEL", "en_GB-cori-high")
+    voice_dir = Path("~/.cache/piper").expanduser()
+
+    if not voice_dir.exists():
+        voice_dir.mkdir(parents=True)
+
+    if not (voice_dir / f"{voice}.onnx").exists():
+        download_voice(voice, voice_dir)
+
+    return PiperVoice.load(voice_dir / f"{voice}.onnx", download_dir=voice_dir)
+
+
+def startup():
+    # Prime the audio model caches in the background
+    asyncio.create_task(asyncio.to_thread(whisper_model))
+    asyncio.create_task(asyncio.to_thread(piper_model))
 
 
 class StreamingTranscriber:
@@ -101,20 +117,27 @@ class StreamingTranscriber:
         return text if text else None
 
 
-text_to_speech_resample = Resample(24000, 16000)
+@cache
+def get_resampler(orig_freq: int, new_freq: int):
+    return Resample(orig_freq, new_freq)
 
 
-def text_to_speech(text: str):
-    pipeline = kokoro_model()
-    generator = pipeline(text, voice="af_heart", speed=1.25)
+@logfire.instrument()
+def text_to_speech(text: str, sample_rate=16000):
+    voice = piper_model()
 
-    for gs, ps, audio in generator:
-        # Convert the audio tensor from 24000HZ to 16000HZ
-        # Then load the data as bytes
-        buffer = BytesIO()
-        audio = text_to_speech_resample(audio)
-        AudioEncoder(audio, sample_rate=16000).to_file_like(buffer, "wav")
+    resampler = get_resampler(voice.config.sample_rate, sample_rate)
 
-        buffer.seek(0)
-        with wave.open(buffer, "rb") as f:
-            yield f.readframes(sys.maxsize)
+    sound = numpy.concatenate(
+        [chunk.audio_float_array for chunk in voice.synthesize(text)]
+    )
+
+    # Convert the audio tensor from 24000HZ to 16000HZ
+    # Then load the data as bytes
+    buffer = BytesIO()
+    audio = resampler(torch.from_numpy(sound))
+    AudioEncoder(audio, sample_rate=sample_rate).to_file_like(buffer, "wav")
+
+    buffer.seek(0)
+    with wave.open(buffer, "rb") as f:
+        return f.readframes(sys.maxsize)
