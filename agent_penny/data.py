@@ -154,7 +154,12 @@ class LocalDataLayer(BaseDataLayer):
     @entry_point
     async def delete_step(self, step_id: str):
         logger.debug("Delete step", step_id=step_id)
-        raise NotImplementedError("delete_step")
+        for f in self.threads_dir.glob("*.json"):
+            thread: ThreadDict = json.loads(f.read_text())
+            if steps := thread.get("steps"):
+                if any(s["id"] == step_id for s in steps):
+                    thread["steps"] = [s for s in steps if s["id"] != step_id]
+                    self.save_thread(thread)
 
     @entry_point
     async def get_thread_author(self, thread_id: str) -> str:
