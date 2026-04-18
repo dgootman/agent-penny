@@ -11,6 +11,7 @@ from pydantic_ai.models.google import GoogleModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModelSettings
 
 from agent_penny import user_data
+from agent_penny.capabilities.images import ImageGenerationCapability
 from agent_penny.capabilities.scheduling import SchedulingCapability
 from agent_penny.capabilities.skills import SkillsCapability
 from agent_penny.capabilities.telegram import TelegramCapability
@@ -135,6 +136,7 @@ def create() -> Agent:
         tools=tools,
         toolsets=toolsets,
         capabilities=[
+            ImageGenerationCapability(),
             SchedulingCapability(),
             SkillsCapability(),
             TelegramCapability(),
