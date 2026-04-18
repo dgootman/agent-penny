@@ -50,11 +50,14 @@ MailHeaders = TypedDict(
     },
 )
 
+MailContentType = Literal["text/plain", "text/markdown"]
+
 
 class MailMessage(MailHeaders):
     id: str
     received: datetime
     content: str
+    content_type: MailContentType
 
 
 class MailMessageSnippet(MailHeaders):
@@ -74,6 +77,7 @@ class DraftRequest(TypedDict):
     cc: NotRequired[str]
     bcc: NotRequired[str]
     content: str
+    content_type: NotRequired[MailContentType]
 
 
 class CreateDraftRequest(DraftRequest):

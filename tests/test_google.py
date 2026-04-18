@@ -1,6 +1,7 @@
 import getpass
 import os
 from datetime import datetime, time, timedelta
+from textwrap import dedent
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
@@ -203,7 +204,13 @@ def test_email_update_draft(provider: GoogleProvider, draft_id: str):
         {
             "subject": "Test",
             "to": "agent-penny@007.com",
-            "content": f"Updated: {datetime.now().isoformat()}",
+            "content": dedent(f"""\
+                # Important message for James Bond
+
+                From: *Miss Moneypenny*
+
+                Updated: **{datetime.now().isoformat()}**"""),
+            "content_type": "text/markdown",
         },
     )
 

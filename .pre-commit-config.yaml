@@ -40,6 +40,7 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies:
+          - types-markdown>=3.10.2.20260408
           - types-python-dateutil>=2.9.0.20260402
           - types-pyyaml>=6.0.12.20260408
           - types-requests>=2.33.0.20260402

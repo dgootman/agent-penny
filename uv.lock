@@ -24,6 +24,7 @@ dependencies = [
     { name = "htpy" },
     { name = "logfire", extra = ["aiohttp-client", "httpx", "requests"] },
     { name = "loguru" },
+    { name = "markdown" },
     { name = "markitdown", extra = ["pdf"] },
     { name = "perplexityai" },
     { name = "piper-tts" },
@@ -53,6 +54,7 @@ dev = [
     { name = "pytest-dotenv" },
     { name = "ruff" },
     { name = "ty" },
+    { name = "types-markdown" },
     { name = "types-python-dateutil" },
     { name = "types-pyyaml" },
     { name = "types-requests" },
@@ -69,6 +71,7 @@ requires-dist = [
     { name = "htpy", specifier = ">=25.12.0" },
     { name = "logfire", extras = ["aiohttp-client", "httpx", "requests"], specifier = ">=4.24.0" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "markdown", specifier = ">=3.10.2" },
     { name = "markitdown", extras = ["pdf"], specifier = ">=0.1.4" },
     { name = "perplexityai", specifier = ">=0.26.0" },
     { name = "piper-tts", specifier = ">=1.4.2" },
@@ -96,6 +99,7 @@ dev = [
     { name = "pytest-dotenv", specifier = ">=0.5.2" },
     { name = "ruff", specifier = ">=0.14.14" },
     { name = "ty", specifier = ">=0.0.29" },
+    { name = "types-markdown", specifier = ">=3.10.2.20260408" },
     { name = "types-python-dateutil", specifier = ">=2.9.0.20260402" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
     { name = "types-requests", specifier = ">=2.33.0.20260402" },
@@ -1811,6 +1815,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/25/8f/132b0d7cd51c02c39fd52658a5896276c30c8cc2fd453270b19db8c40f7e/magika-0.6.3-py3-none-macosx_11_0_arm64.whl", hash = "sha256:86901e64b05dde5faff408c9b8245495b2e1fd4c226e3393d3d2a3fee65c504b", size = 13358841, upload-time = "2025-10-30T15:22:27.413Z" },
     { url = "https://files.pythonhosted.org/packages/c4/03/5ed859be502903a68b7b393b17ae0283bf34195cfcca79ce2dc25b9290e7/magika-0.6.3-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:3d9661eedbdf445ac9567e97e7ceefb93545d77a6a32858139ea966b5806fb64", size = 15367335, upload-time = "2025-10-30T15:22:29.907Z" },
     { url = "https://files.pythonhosted.org/packages/7b/9e/f8ee7d644affa3b80efdd623a3d75865c8f058f3950cb87fb0c48e3559bc/magika-0.6.3-py3-none-win_amd64.whl", hash = "sha256:e57f75674447b20cab4db928ae58ab264d7d8582b55183a0b876711c2b2787f3", size = 12692831, upload-time = "2025-10-30T15:22:32.063Z" },
+]
+
+[[package]]
+name = "markdown"
+version = "3.10.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/f4/69fa6ed85ae003c2378ffa8f6d2e3234662abd02c10d216c0ba96081a238/markdown-3.10.2.tar.gz", hash = "sha256:994d51325d25ad8aa7ce4ebaec003febcce822c3f8c911e3b17c52f7f589f950", size = 368805, upload-time = "2026-02-09T14:57:26.942Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/de/1f/77fa3081e4f66ca3576c896ae5d31c3002ac6607f9747d2e3aa49227e464/markdown-3.10.2-py3-none-any.whl", hash = "sha256:e91464b71ae3ee7afd3017d9f358ef0baf158fd9a298db92f1d4761133824c36", size = 108180, upload-time = "2026-02-09T14:57:25.787Z" },
 ]
 
 [[package]]
@@ -4548,6 +4561,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b4/c1/56c06e469e10ed05210c24656c4a7c670c4d2aff6b040905bbfa4bd4a93d/types_httplib2-0.31.1.20260115.tar.gz", hash = "sha256:a4984e89d987e842a10470265a4370cc1e6d1720dd0a6780601a093ccafa1a64", size = 10546, upload-time = "2026-01-15T03:22:26.713Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9e/5f/444f202830113009781dea62ea86715248bccb1301488ea41e8eb53a98af/types_httplib2-0.31.1.20260115-py3-none-any.whl", hash = "sha256:aa324c28dfd22b011c3f4880d78047974db150ba93a90def6353baf427d1a0c9", size = 10648, upload-time = "2026-01-15T03:22:25.579Z" },
+]
+
+[[package]]
+name = "types-markdown"
+version = "3.10.2.20260408"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/0e/a690840934c459aa50e0470e7550d7f151632eafa4a8e3c21d18009ad15c/types_markdown-3.10.2.20260408.tar.gz", hash = "sha256:d5cba15ed65a1420e80e31c17e3d4a2ad7208a3f3a4da97fd2c5f093caf523cd", size = 19784, upload-time = "2026-04-08T04:33:07.644Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/75/7e/265a8df257c8dced6ea89295f793a19f0a49ccbfeae1ed562368b2caf7a3/types_markdown-3.10.2.20260408-py3-none-any.whl", hash = "sha256:b0bbe8b7a8174db732067b86e391262898f5f536589ea81efec6d35ceb829331", size = 25857, upload-time = "2026-04-08T04:33:06.769Z" },
 ]
 
 [[package]]

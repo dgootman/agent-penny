@@ -12,6 +12,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from loguru import logger
+from markdown import markdown
 from markitdown import MarkItDown, StreamInfo
 from pydantic_ai import FunctionToolset, ModelRetry
 
@@ -26,6 +27,7 @@ from agent_penny.types import (
     CreateDraftResponse,
     Draft,
     DraftRequest,
+    MailContentType,
     MailMessage,
     MailMessageSnippet,
     UpdateCalendarEventRequest,
@@ -283,7 +285,7 @@ class GoogleProvider:
     def google_message_adapter(self, message) -> MailMessage:
         email = message_from_bytes(urlsafe_b64decode(message["raw"]))
 
-        def get_payload():
+        def get_payload() -> tuple[MailContentType, str]:
             payloads = list(email.walk())
 
             text_part = next(
@@ -297,21 +299,21 @@ class GoogleProvider:
 
                     # TODO: Replace fallback with charset inference based on charset in payload
                     try:
-                        return decoded_bytes.decode()  # type: ignore[union-attr,ty:unresolved-attribute]
+                        return "text/plain", decoded_bytes.decode()  # type: ignore[union-attr,ty:unresolved-attribute]
                     except UnicodeDecodeError:
-                        return decoded_bytes.decode("latin-1")  # type: ignore[union-attr,ty:unresolved-attribute]
+                        return "text/plain", decoded_bytes.decode("latin-1")  # type: ignore[union-attr,ty:unresolved-attribute]
 
                 payload = text_part.get_payload()
                 if isinstance(payload, str):
-                    return payload
-                return text_part.get_payload(decode=True).decode()  # type: ignore[union-attr,ty:unresolved-attribute]
+                    return "text/plain", payload
+                return "text/plain", text_part.get_payload(decode=True).decode()  # type: ignore[union-attr,ty:unresolved-attribute]
 
             html_part = next(
                 (p for p in payloads if p.get_content_type() == "text/html"),
                 None,
             )
             if html_part:
-                return md.convert_stream(
+                return "text/markdown", md.convert_stream(
                     BytesIO(html_part.get_payload(decode=True)),  # type: ignore[arg-type,ty:invalid-argument-type]
                     stream_info=StreamInfo(
                         mimetype=html_part.get_content_type(),
@@ -331,11 +333,14 @@ class GoogleProvider:
                 for content, charset in decode_header(value)
             )
 
+        content_type, payload = get_payload()
+
         mail_message: MailMessage = {
             "id": message["id"],
             "from": decode(email["from"]),
             "received": datetime.fromtimestamp(int(message["internalDate"]) / 1000),
-            "content": get_payload(),
+            "content": payload,
+            "content_type": content_type,
         }
 
         if email["subject"]:
@@ -469,13 +474,21 @@ class GoogleProvider:
     def draft_to_encoded_message(self, draft: DraftRequest) -> str:
         email = EmailMessage()
 
+        content = draft["content"]
+        subtype = draft.get("content_type", "text/plain").split("/")[-1]
+
+        if subtype == "markdown":
+            # Convert to HTML
+            content = markdown(content)
+            subtype = "html"
+
         email["Subject"] = draft["subject"]
         email["To"] = draft["to"]
         if draft.get("cc"):
             email["Cc"] = draft["cc"]
         if draft.get("bcc"):
             email["Bcc"] = draft["bcc"]
-        email.set_content(draft["content"])
+        email.set_content(content, subtype=subtype)
 
         encoded_message = urlsafe_b64encode(email.as_bytes()).decode()
 
