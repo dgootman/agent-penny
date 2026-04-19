@@ -1,5 +1,6 @@
 import getpass
 import os
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -13,6 +14,7 @@ from loguru import logger
 from pydantic_ai import (
     Agent,
     AgentRunResultEvent,
+    BinaryContent,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     ModelMessage,
@@ -296,8 +298,18 @@ async def on_message(message: cl.Message):
                 message_history=message_history,
             )
 
+            attachments = [
+                BinaryContent(data=Path(e.path).read_bytes(), media_type=e.mime)
+                for e in message.elements
+                if e.path and e.mime
+            ]
+
+            user_prompt = (
+                message.content if not attachments else [message.content, *attachments]
+            )
+
             stream = agent.run_stream_events(
-                message.content,
+                user_prompt,  # type: ignore[arg-type]
                 message_history=message_history,
                 metadata={"skill_name": message.command},
             )
