@@ -1,3 +1,4 @@
+import asyncio
 import getpass
 import os
 from pathlib import Path
@@ -273,10 +274,11 @@ async def on_settings_update(chat_settings: dict[str, Any]):
         cl.user_session.set("agent", agent)
 
 
-@cl.on_message
-@logger.catch
 @logfire.instrument()
-async def on_message(message: cl.Message):
+async def process_message(
+    message: cl.Message,
+    additional_instructions: list[str] | None = None,
+):
     user = get_user()
     user_settings = user_data.load_settings()
 
@@ -311,6 +313,7 @@ async def on_message(message: cl.Message):
             stream = agent.run_stream_events(
                 user_prompt,  # type: ignore[arg-type]
                 message_history=message_history,
+                instructions=additional_instructions,
                 metadata={"skill_name": message.command},
             )
 
@@ -363,6 +366,13 @@ async def on_message(message: cl.Message):
             raise e
 
 
+@cl.on_message
+@logger.catch
+@logfire.instrument()
+async def on_message(message: cl.Message):
+    await process_message(message)
+
+
 if audio_input_enabled:
     from agent_penny.audio import StreamingTranscriber, text_to_speech
 
@@ -381,32 +391,47 @@ if audio_input_enabled:
                 16000 if not user_agent or user_agent.family != "Firefox" else 44000
             )
 
+            cl.user_session.set("sample_rate", sample_rate)
             cl.user_session.set("transcriber", StreamingTranscriber(sample_rate))
 
             return True
+
+    @logfire.instrument()
+    async def speak(text: str):
+        track_id = str(uuid4())
+        sample_rate: int = cl.user_session.get("sample_rate", 16000)
+
+        for sentence in text.splitlines():
+            if sentence:
+                speech = text_to_speech(sentence, sample_rate)
+                await cl.context.emitter.send_audio_chunk(
+                    cl.OutputAudioChunk(
+                        mimeType="pcm16",
+                        data=speech,
+                        track=track_id,
+                    )
+                )
 
     @logfire.instrument()
     async def on_transcription(text: str) -> None:
         message = cl.Message(type="user_message", content=text)
 
         await message.send()
-        await on_message(message)
+        await process_message(
+            message,
+            [
+                "You are a conversational assistant responding to a user's speech input.",
+                "Provide a conversational response that can be converted to speech.",
+                "DO NOT use any formatting in your responses as they will be spoken to the user.",
+            ],
+        )
 
         message_history: list[ModelMessage] = cl.user_session.get("message_history", [])
-        last_message = message_history[-1]
+        if message_history:
+            last_message = message_history[-1]
 
-        if last_message.kind == "response" and last_message.text:
-            track_id = str(uuid4())
-            cl.user_session.set("track_id", str(track_id))
-
-            speech = text_to_speech(last_message.text)
-            await cl.context.emitter.send_audio_chunk(
-                cl.OutputAudioChunk(
-                    mimeType="pcm16",
-                    data=speech,
-                    track=track_id,
-                )
-            )
+            if last_message.kind == "response" and last_message.text:
+                asyncio.create_task(speak(last_message.text))
 
     @cl.on_audio_chunk
     async def on_audio_chunk(chunk: cl.InputAudioChunk):
