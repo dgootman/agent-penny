@@ -93,17 +93,49 @@ class LocalDataLayer(BaseDataLayer):
 
     @entry_point
     async def create_element(self, element: Element):
-        raise NotImplementedError("create_element")
+        logger.debug(
+            "Create element", thread_id=element.thread_id, element_id=element.id
+        )
+
+        thread = self.load_thread(element.thread_id)
+
+        if "elements" not in thread or thread["elements"] is None:
+            thread["elements"] = []
+
+        thread["elements"].append(element.to_dict())  # type: ignore[union-attr]
+
+        self.save_thread(thread)
 
     @entry_point
     async def get_element(
         self, thread_id: str, element_id: str
     ) -> Optional[ElementDict]:
-        raise NotImplementedError("get_element")
+        logger.debug("Get element", thread_id=thread_id, element_id=element_id)
+
+        thread = self.load_thread(thread_id)
+
+        if elements := thread.get("elements") or []:
+            for element in elements:
+                if element["id"] == element_id:
+                    return element
+
+        return None
 
     @entry_point
     async def delete_element(self, element_id: str, thread_id: Optional[str] = None):
-        raise NotImplementedError("delete_element")
+        logger.debug("Delete element", thread_id=thread_id, element_id=element_id)
+
+        assert thread_id
+
+        thread = self.load_thread(thread_id)
+
+        if thread.get("elements") is not None:
+            thread["elements"] = [
+                e
+                for e in thread["elements"]  # type: ignore[union-attr,ty:not-iterable]
+                if e["id"] != element_id
+            ]
+            self.save_thread(thread)
 
     def load_thread(self, thread_id: str) -> ThreadDict:
         data_file = self.threads_dir / f"{thread_id}.json"
