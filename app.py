@@ -48,12 +48,14 @@ logfire.configure(
 logfire.instrument_pydantic_ai()
 logfire.instrument_httpx()
 logfire.instrument_requests()
+logfire.instrument_aiohttp_client()
 
 default_model = os.environ["MODEL"]
 default_thinking = os.environ.get("THINKING") == "true"
 google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 audio_input_enabled = "WHISPER_MODEL" in os.environ
 conversation_history_enabled = os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true"
+telegram_bot_enabled = bool(os.environ.get("TELEGRAM_BOT_TOKEN"))
 
 
 @cl.on_app_startup
@@ -69,6 +71,11 @@ async def on_app_startup():
         cl_config.features.audio.enabled = True
 
         audio.startup()
+
+    if telegram_bot_enabled:
+        from agent_penny import telegram_bot
+
+        telegram_bot.startup()
 
 
 if google_auth_enabled:
