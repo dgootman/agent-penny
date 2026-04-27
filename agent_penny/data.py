@@ -2,6 +2,7 @@ import functools
 import json
 import os
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from chainlit.data.base import BaseDataLayer
@@ -21,7 +22,8 @@ from pydantic import BaseModel
 from pydantic_ai import Agent
 from typing_extensions import override
 
-from . import user_data
+import agent_penny.chainlit_utils as clu
+from agent_penny import user_data
 
 
 def entry_point(func):
@@ -98,6 +100,22 @@ class LocalDataLayer(BaseDataLayer):
         )
 
         thread = self.load_thread(element.thread_id)
+
+        if element.path:
+            user = thread.get("userId") or clu.get_user().identifier
+
+            assert not element.url
+            assert user
+
+            elements_path = user_data._user_path(user, "elements")
+            if not elements_path.exists():
+                elements_path.mkdir()
+
+            src_path = Path(element.path)
+            dest_path = elements_path / src_path.name
+            dest_path.write_bytes(src_path.read_bytes())
+
+            element.url = f"/private/elements/{dest_path.name}"
 
         if "elements" not in thread or thread["elements"] is None:
             thread["elements"] = []
