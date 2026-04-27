@@ -11,6 +11,7 @@ dependencies = [
     "fake-useragent>=2.2.0",
     "faster-whisper>=1.2.1",
     "google-api-python-client>=2.188.0",
+    "htpy>=25.12.0",
     "logfire[aiohttp-client,httpx,requests]>=4.24.0",
     "loguru>=0.7.3",
     "markitdown[pdf]>=0.1.4",

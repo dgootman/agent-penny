@@ -30,7 +30,7 @@ from pydantic_ai import (
 from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
 
-from agent_penny import user_data
+from agent_penny import user_data, user_data_server
 from agent_penny.agent import create as agent_create
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.chainlit_utils import get_user
@@ -56,6 +56,8 @@ google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 audio_input_enabled = "WHISPER_MODEL" in os.environ
 conversation_history_enabled = os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true"
 telegram_bot_enabled = bool(os.environ.get("TELEGRAM_BOT_TOKEN"))
+
+user_data_server.mount()
 
 
 @cl.on_app_startup

@@ -21,6 +21,7 @@ dependencies = [
     { name = "fake-useragent" },
     { name = "faster-whisper" },
     { name = "google-api-python-client" },
+    { name = "htpy" },
     { name = "logfire", extra = ["aiohttp-client", "httpx", "requests"] },
     { name = "loguru" },
     { name = "markitdown", extra = ["pdf"] },
@@ -65,6 +66,7 @@ requires-dist = [
     { name = "fake-useragent", specifier = ">=2.2.0" },
     { name = "faster-whisper", specifier = ">=1.2.1" },
     { name = "google-api-python-client", specifier = ">=2.188.0" },
+    { name = "htpy", specifier = ">=25.12.0" },
     { name = "logfire", extras = ["aiohttp-client", "httpx", "requests"], specifier = ">=4.24.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "markitdown", extras = ["pdf"], specifier = ">=0.1.4" },
@@ -1318,6 +1320,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/dd/7ac658d54b9fb7999a0ccb07ad863b413cbaf5cf172f48ebcd9497ec7263/hf_xet-1.2.0-cp37-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:4c1428c9ae73ec0939410ec73023c4f842927f39db09b063b9482dac5a3bb737", size = 3413812, upload-time = "2025-10-24T19:04:24.585Z" },
     { url = "https://files.pythonhosted.org/packages/92/68/89ac4e5b12a9ff6286a12174c8538a5930e2ed662091dd2572bbe0a18c8a/hf_xet-1.2.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:a55558084c16b09b5ed32ab9ed38421e2d87cf3f1f89815764d1177081b99865", size = 3508920, upload-time = "2025-10-24T19:04:26.927Z" },
     { url = "https://files.pythonhosted.org/packages/cb/44/870d44b30e1dcfb6a65932e3e1506c103a8a5aea9103c337e7a53180322c/hf_xet-1.2.0-cp37-abi3-win_amd64.whl", hash = "sha256:e6584a52253f72c9f52f9e549d5895ca7a471608495c4ecaa6cc73dba2b24d69", size = 2905735, upload-time = "2025-10-24T19:04:35.928Z" },
+]
+
+[[package]]
+name = "htpy"
+version = "25.12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markupsafe" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b6/23/e00bbc355e70444d16c90a0f1fdce108c67379fe65e9312cd026c13db976/htpy-25.12.0.tar.gz", hash = "sha256:7d3f4aaa10b35c5e46dfa804df1f3f18772caf8efee6e6a035b5dee89a5d6af8", size = 291259, upload-time = "2025-12-01T20:35:01.666Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/f1/a2f2caf14b03e7fab4801ac6018a4ac996de3e82a573e7aa21f3cb11a7cc/htpy-25.12.0-py3-none-any.whl", hash = "sha256:642e69278d6f8f4643acc2d2d13c21682ceb5fb4860ecbbce042f171577fff54", size = 21141, upload-time = "2025-12-01T20:35:00.13Z" },
 ]
 
 [[package]]
