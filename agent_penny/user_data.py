@@ -8,13 +8,15 @@ from slugify.slugify import slugify
 from agent_penny.chainlit_utils import get_user
 
 data_dir = Path(os.environ.get("DATA_DIR", "~/.local/share/agent-penny")).expanduser()
+users_dir = data_dir / "users"
 
 
 def _user_path(user: str, file_name: str) -> Path:
     """Insecure function. Use :func:`path` whenever user context is available."""
-    user_data_dir = data_dir / slugify(user)
-    user_data_dir.mkdir(parents=True, exist_ok=True)
-    return user_data_dir / file_name
+    user_dir = users_dir / slugify(user)
+    if not user_dir.exists():
+        user_dir.mkdir(parents=True)
+    return user_dir / file_name
 
 
 def path(file_name: str) -> Path:

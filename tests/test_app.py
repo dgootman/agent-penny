@@ -1,3 +1,6 @@
+# NOTE: ty is failing to discern the discriminators for ModelResponse types and parts
+# ty: ignore[invalid-argument-type, unresolved-attribute]
+
 from datetime import datetime
 from pathlib import Path
 from typing import AsyncIterator
@@ -24,8 +27,10 @@ from pydantic_ai.models.function import (
 async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     # Create some test memories.
     # Note: The testing user id is test_user, but we use the slugified form for directories
-    (tmp_path / "test-user").mkdir()
-    memory_file = tmp_path / "test-user" / "memories.txt"
+    users_dir = tmp_path / "users"
+    user_dir = users_dir / "test-user"
+    user_dir.mkdir(parents=True)
+    memory_file = user_dir / "memories.txt"
     memory_file.write_text("You are a test agent.")
 
     monkeypatch.setenv("MODEL", "test")
@@ -62,6 +67,7 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(agent_penny.agent, "default_thinking", False)
     monkeypatch.setattr(agent_penny.user_data, "data_dir", tmp_path)
+    monkeypatch.setattr(agent_penny.user_data, "users_dir", users_dir)
 
     emit_mock = AsyncMock()
     emit_call_mock = AsyncMock()

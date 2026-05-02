@@ -56,6 +56,7 @@ google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 audio_input_enabled = "WHISPER_MODEL" in os.environ
 conversation_history_enabled = os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true"
 telegram_bot_enabled = bool(os.environ.get("TELEGRAM_BOT_TOKEN"))
+scheduling_disabled = os.environ.get("SCHEDULING_DISABLED") == "true"
 
 user_data_server.mount()
 
@@ -78,6 +79,11 @@ async def on_app_startup():
         from agent_penny import telegram_bot
 
         telegram_bot.startup()
+
+    if not scheduling_disabled:
+        from agent_penny.capabilities import scheduling
+
+        scheduling.startup()
 
 
 if google_auth_enabled:
