@@ -165,11 +165,13 @@ async def render_settings():
             "google-gla:gemini-2.5-flash-lite",
         ],
         "openai": [  # https://developers.openai.com/api/docs/models
+            "openai:gpt-5.5",
             "openai:gpt-5.4",
             "openai:gpt-5.4-mini",
             "openai:gpt-5.4-nano",
         ],
         "openai-codex": [  # https://developers.openai.com/codex/models
+            "openai-codex:gpt-5.5",
             "openai-codex:gpt-5.4",
             "openai-codex:gpt-5.4-mini",
             "openai-codex:gpt-5.3-codex",
