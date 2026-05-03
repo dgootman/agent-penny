@@ -1,5 +1,6 @@
 import asyncio
 import getpass
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -35,10 +36,11 @@ from agent_penny.agent import create as agent_create
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.chainlit_utils import get_user
 from agent_penny.data import LocalDataLayer
-from agent_penny.logging import json_log_sink
+from agent_penny.logging import InterceptHandler, json_log_sink
 
 logger.remove()
 logger.add(json_log_sink)
+logging.basicConfig(handlers=[InterceptHandler()], force=True)
 
 logfire.configure(
     service_name=os.environ.get("OTEL_SERVICE_NAME", "agent-penny"),
