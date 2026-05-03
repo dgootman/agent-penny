@@ -1,10 +1,13 @@
 import json
 
+import pytest
 
-def test_fetch_raw():
-    from agent_penny.tools.web import web_fetch
 
-    result = web_fetch("https://api.github.com/repos/dgootman/agent-penny")
+@pytest.mark.asyncio
+async def test_fetch_raw():
+    from agent_penny.capabilities.web import web_fetch
+
+    result = await web_fetch("https://api.github.com/repos/dgootman/agent-penny")
 
     assert result
 
@@ -13,10 +16,11 @@ def test_fetch_raw():
     assert data["name"] == "agent-penny"
 
 
-def test_fetch_markdown():
-    from agent_penny.tools.web import web_fetch
+@pytest.mark.asyncio
+async def test_fetch_markdown():
+    from agent_penny.capabilities.web import web_fetch
 
-    result = web_fetch(
+    result = await web_fetch(
         "https://en.wikipedia.org/wiki/Miss_Moneypenny", format="markdown"
     )
 

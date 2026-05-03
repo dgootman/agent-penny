@@ -14,13 +14,13 @@ from agent_penny import user_data
 from agent_penny.capabilities.scheduling import SchedulingCapability
 from agent_penny.capabilities.skills import SkillsCapability
 from agent_penny.capabilities.telegram import TelegramCapability
+from agent_penny.capabilities.web import WebFetchCapability
 from agent_penny.chainlit_utils import get_user
 from agent_penny.models.codex import CodexOpenAIResponsesModel
 from agent_penny.tools.date import current_date
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
 from agent_penny.tools.tavily_search import tavily_search
-from agent_penny.tools.web import web_fetch
 
 # default_model can be overriden for tests
 default_model: str | Model = os.environ["MODEL"]
@@ -97,7 +97,7 @@ def create() -> Agent:
     user = get_user()
     settings = user_data.load_settings()
 
-    tools: list[Callable[..., Any] | Tool] = [current_date, web_fetch]
+    tools: list[Callable[..., Any] | Tool] = [current_date]
 
     toolsets: list[AbstractToolset[Any]] = []
 
@@ -138,6 +138,7 @@ def create() -> Agent:
             SchedulingCapability(),
             SkillsCapability(),
             TelegramCapability(),
+            WebFetchCapability(),
         ],
         system_prompt=[
             f"You know the following from previous conversations: {memory.load_memory()}"
