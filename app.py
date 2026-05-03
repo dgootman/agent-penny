@@ -44,6 +44,7 @@ logfire.configure(
     service_name=os.environ.get("OTEL_SERVICE_NAME", "agent-penny"),
     # Do not send traces to logfire by default
     send_to_logfire=os.environ.get("LOGFIRE_SEND_TO_LOGFIRE") == "true",
+    metrics=False,
 )
 logfire.instrument_pydantic_ai()
 logfire.instrument_httpx()
