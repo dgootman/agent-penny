@@ -16,6 +16,8 @@ async def test_scheduling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     users_dir = tmp_path / "users"
     users_dir.mkdir()
 
+    monkeypatch.setenv("MODEL", "test")
+
     from agent_penny import agent, user_data
 
     monkeypatch.setattr(user_data, "data_dir", tmp_path)
