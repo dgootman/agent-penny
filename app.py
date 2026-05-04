@@ -9,7 +9,7 @@ from uuid import uuid4
 import chainlit as cl
 import logfire
 from chainlit.config import config as cl_config
-from chainlit.input_widget import InputWidget, Select, Switch, TextInput
+from chainlit.input_widget import InputWidget, Select, TextInput
 from chainlit.oauth_providers import providers as oauth_providers
 from chainlit.types import ThreadDict
 from loguru import logger
@@ -22,12 +22,14 @@ from pydantic_ai import (
     ModelMessage,
     ModelRequest,
     ModelResponse,
+    ModelSettings,
     PartEndEvent,
     RetryPromptPart,
     TextPart,
     ToolReturnPart,
     UserPromptPart,
 )
+from pydantic_ai.settings import ThinkingLevel
 from starlette.datastructures import Headers
 from ua_parser import parse_user_agent
 
@@ -54,7 +56,12 @@ logfire.instrument_requests()
 logfire.instrument_aiohttp_client()
 
 default_model = os.environ["MODEL"]
-default_thinking = os.environ.get("THINKING") == "true"
+default_thinking = os.environ.get("THINKING", "medium")
+if default_thinking == "true":
+    default_thinking = "medium"
+elif default_thinking == "false":
+    default_thinking = "none"
+
 google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
 audio_input_enabled = "WHISPER_MODEL" in os.environ
 conversation_history_enabled = os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true"
@@ -208,16 +215,6 @@ async def render_settings():
         )
     )
 
-    setting_inputs.append(
-        Switch(
-            id="thinking",
-            label="Thinking",
-            initial=user_settings["thinking"]
-            if "thinking" in user_settings
-            else default_thinking,
-        )
-    )
-
     await cl.ChatSettings(setting_inputs).send()
 
 
@@ -231,6 +228,56 @@ if conversation_history_enabled:
 
 async def prepare_chat():
     await render_settings()
+
+    # Define a Reasoning Effort picker
+    reasoning_mode = cl.Mode(
+        id="reasoning",
+        name="Reasoning",
+        options=[
+            cl.ModeOption(
+                id="none",
+                name="None",
+                description="Skip model reasoning for the fastest, most direct replies.",
+                icon="circle-off",
+            ),
+            cl.ModeOption(
+                id="minimal",
+                name="Minimal",
+                description="Use a tiny amount of reasoning for simple tasks with low latency.",
+                icon="circle-dashed",
+            ),
+            cl.ModeOption(
+                id="low",
+                name="Low",
+                description="Use light reasoning for everyday questions and straightforward edits.",
+                icon="circle",
+            ),
+            cl.ModeOption(
+                id="medium",
+                name="Medium",
+                description="Balance speed and reasoning depth for most tasks.",
+                icon="brain",
+            ),
+            cl.ModeOption(
+                id="high",
+                name="High",
+                description="Spend more effort on complex problems, planning, and careful analysis.",
+                icon="brain-cog",
+            ),
+            cl.ModeOption(
+                id="xhigh",
+                name="X-High",
+                description="Use maximum reasoning for the hardest tasks where quality matters most.",
+                icon="brain-circuit",
+            ),
+        ],
+    )
+
+    if default_option := reasoning_mode.get_option_by_id(default_thinking):
+        default_option.default = True
+
+    # Send modes to the UI
+    await cl.context.emitter.set_modes([reasoning_mode])
 
     agent = agent_create()
     cl.user_session.set("agent", agent)
@@ -336,11 +383,24 @@ async def process_message(
                 message.content if not attachments else [message.content, *attachments]
             )
 
+            model_settings: ModelSettings = {}
+
+            thinking_level: ThinkingLevel = (
+                message.modes["reasoning"]  # type: ignore[assignment]
+                if message.modes
+                else default_thinking or "medium"
+            )  # type: ignore[ty:invalid-assignment]
+            if thinking_level == "none":
+                thinking_level = False
+
+            model_settings["thinking"] = thinking_level
+
             stream = agent.run_stream_events(
                 user_prompt,  # type: ignore[arg-type]
                 message_history=message_history,
                 instructions=additional_instructions,
                 metadata={"skill_name": message.command},
+                model_settings=model_settings,
             )
 
             async for event in stream:

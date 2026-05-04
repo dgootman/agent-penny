@@ -65,7 +65,6 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         "default_model",
         FunctionModel(stream_function=model_function),
     )
-    monkeypatch.setattr(agent_penny.agent, "default_thinking", False)
     monkeypatch.setattr(agent_penny.user_data, "data_dir", tmp_path)
     monkeypatch.setattr(agent_penny.user_data, "users_dir", users_dir)
 

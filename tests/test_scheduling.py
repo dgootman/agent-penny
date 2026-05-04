@@ -28,7 +28,6 @@ async def test_scheduling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         "default_model",
         TestModel(custom_output_text="You did it!", call_tools=[]),
     )
-    monkeypatch.setattr(agent, "default_thinking", False)
 
     import app  # noqa: F401
     from agent_penny.capabilities import scheduling
