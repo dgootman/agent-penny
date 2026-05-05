@@ -7,6 +7,7 @@ from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.models import Model
 
 from agent_penny import user_data
+from agent_penny.capabilities.date import DateTimeCapability
 from agent_penny.capabilities.images import ImageGenerationCapability
 from agent_penny.capabilities.scheduling import SchedulingCapability
 from agent_penny.capabilities.skills import SkillsCapability
@@ -14,7 +15,6 @@ from agent_penny.capabilities.telegram import TelegramCapability
 from agent_penny.capabilities.web import WebFetchCapability
 from agent_penny.chainlit_utils import get_user
 from agent_penny.models.codex import CodexOpenAIResponsesModel
-from agent_penny.tools.date import current_date
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
 from agent_penny.tools.tavily_search import tavily_search
@@ -27,7 +27,7 @@ def create() -> Agent:
     user = get_user()
     settings = user_data.load_settings()
 
-    tools: list[Callable[..., Any] | Tool] = [current_date]
+    tools: list[Callable[..., Any] | Tool] = []
 
     toolsets: list[AbstractToolset[Any]] = []
 
@@ -69,6 +69,7 @@ def create() -> Agent:
         tools=tools,
         toolsets=toolsets,
         capabilities=[
+            DateTimeCapability(),
             ImageGenerationCapability(),
             SchedulingCapability(),
             SkillsCapability(),

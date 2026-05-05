@@ -43,7 +43,7 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     model_responses: list[
         str | DeltaToolCalls | DeltaThinkingCalls | BuiltinToolCallsReturns
     ] = [
-        {0: DeltaToolCall("load_memory"), 1: DeltaToolCall("current_date")},
+        {0: DeltaToolCall("load_memory"), 1: DeltaToolCall("current_time")},
         {2: DeltaToolCall("save_memory", '{"memory": "You are a good test agent."}')},
         "Agent Penny is a personal assistant",
     ]
@@ -135,7 +135,7 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert response.parts[0].part_kind == "tool-call"
     assert response.parts[0].tool_name == "load_memory"
     assert response.parts[1].part_kind == "tool-call"
-    assert response.parts[1].tool_name == "current_date"
+    assert response.parts[1].tool_name == "current_time"
 
     request = requests.pop(0)
     assert len(request.parts) == 2
@@ -143,7 +143,7 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert request.parts[0].tool_name == "load_memory"
     assert request.parts[0].content == "You are a test agent."
     assert request.parts[1].part_kind == "tool-return"
-    assert request.parts[1].tool_name == "current_date"
+    assert request.parts[1].tool_name == "current_time"
     assert request.parts[1].content
     assert datetime.fromisoformat(request.parts[1].content)
 
