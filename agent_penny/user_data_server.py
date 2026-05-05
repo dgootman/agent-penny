@@ -48,7 +48,10 @@ def mount():
                     ]
                 )
 
-            return FileResponse(path)
+            # Override the media-type for yaml from application/yaml to text/yaml to render it in the browser
+            media_type = "text/yaml" if path.suffix == ".yaml" else None
+
+            return FileResponse(path, media_type=media_type)
 
         server.app.router.routes.insert(
             0,

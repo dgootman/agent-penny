@@ -1,5 +1,4 @@
 import asyncio
-import json
 from dataclasses import dataclass
 from datetime import datetime
 from threading import Thread, current_thread
@@ -9,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 import chainlit as cl
 import logfire
+import yaml
 from apscheduler.jobstores.base import JobLookupError  # type: ignore[import-untyped]
 from apscheduler.schedulers.asyncio import (  # type: ignore[import-untyped]
     AsyncIOScheduler,
@@ -73,16 +73,18 @@ def _jobs_path():
 
 
 def _job_file_path(job_name: str):
-    return _jobs_path() / f"{slugify(job_name)}.json"
+    return _jobs_path() / f"{slugify(job_name)}.yaml"
 
 
 def _load_job(job_name: str):
-    return ScheduledJob.model_validate_json(_job_file_path(job_name).read_text())
+    return ScheduledJob.model_validate(
+        yaml.safe_load(_job_file_path(job_name).read_text())
+    )
 
 
 def _save_job(job: ScheduledJob):
     return _job_file_path(job.name).write_text(
-        job.model_dump_json(indent=2, exclude_none=True)
+        yaml.safe_dump(job.model_dump(exclude_none=True), sort_keys=False)
     )
 
 
@@ -224,10 +226,12 @@ def startup():
         if not (user_dir / "user.json").exists():
             continue
 
-        user_id = json.loads((user_dir / "user.json").read_text())["identifier"]
+        user_id = cl.PersistedUser.from_json(
+            (user_dir / "user.json").read_text()
+        ).identifier
 
-        for job_file in user_dir.glob("jobs/*.json"):
-            job = ScheduledJob.model_validate_json(job_file.read_text())
+        for job_file in user_dir.glob("jobs/*.yaml"):
+            job = ScheduledJob.model_validate(yaml.safe_load(job_file.read_text()))
             _add_job(user_id, job)
 
 
@@ -236,7 +240,7 @@ toolset = FunctionToolset()
 
 @toolset.tool_plain()
 def list_jobs() -> list[ScheduledJob]:
-    return [_load_job(p.stem) for p in _jobs_path().glob("*.json")]
+    return [_load_job(p.stem) for p in _jobs_path().glob("*.yaml")]
 
 
 @toolset.tool_plain()
