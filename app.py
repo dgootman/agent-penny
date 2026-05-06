@@ -39,15 +39,16 @@ from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.chainlit_utils import get_user
 from agent_penny.data import LocalDataLayer
 from agent_penny.logging import InterceptHandler, json_log_sink
+from agent_penny.settings import settings
 
 logger.remove()
 logger.add(json_log_sink)
 logging.basicConfig(handlers=[InterceptHandler()], force=True)
 
 logfire.configure(
-    service_name=os.environ.get("OTEL_SERVICE_NAME", "agent-penny"),
+    service_name=settings.OTEL_SERVICE_NAME,
     # Do not send traces to logfire by default
-    send_to_logfire=os.environ.get("LOGFIRE_SEND_TO_LOGFIRE") == "true",
+    send_to_logfire=settings.LOGFIRE_SEND_TO_LOGFIRE,
     metrics=False,
 )
 logfire.instrument_pydantic_ai()
@@ -55,18 +56,11 @@ logfire.instrument_httpx()
 logfire.instrument_requests()
 logfire.instrument_aiohttp_client()
 
-default_model = os.environ["MODEL"]
-default_thinking = os.environ.get("THINKING", "medium")
-if default_thinking == "true":
-    default_thinking = "medium"
-elif default_thinking == "false":
-    default_thinking = "none"
-
-google_auth_enabled = bool(os.environ.get("OAUTH_GOOGLE_CLIENT_ID"))
-audio_input_enabled = "WHISPER_MODEL" in os.environ
-conversation_history_enabled = os.environ.get("CONVERSATION_HISTORY_ENABLED") == "true"
-telegram_bot_enabled = bool(os.environ.get("TELEGRAM_BOT_TOKEN"))
-scheduling_disabled = os.environ.get("SCHEDULING_DISABLED") == "true"
+google_auth_enabled = bool(settings.OAUTH_GOOGLE_CLIENT_ID)
+audio_input_enabled = bool(settings.WHISPER_MODEL)
+conversation_history_enabled = settings.CONVERSATION_HISTORY_ENABLED
+telegram_bot_enabled = bool(settings.TELEGRAM_BOT_TOKEN)
+scheduling_disabled = settings.SCHEDULING_DISABLED
 
 user_data_server.mount()
 
@@ -186,7 +180,7 @@ async def render_settings():
     }
 
     user_settings = user_data.load_settings()
-    user_model = user_settings.get("model") or default_model
+    user_model = user_settings.get("model") or settings.MODEL
 
     setting_inputs: list[InputWidget] = []
 
@@ -273,7 +267,13 @@ async def prepare_chat():
         ],
     )
 
-    if default_option := reasoning_mode.get_option_by_id(default_thinking):
+    default_reasoning = (
+        settings.THINKING
+        if not isinstance(settings.THINKING, bool)
+        else {True: "medium", False: "none"}[settings.THINKING]
+    )
+
+    if default_option := reasoning_mode.get_option_by_id(default_reasoning):
         default_option.default = True
 
     # Send modes to the UI
@@ -386,9 +386,7 @@ async def process_message(
             model_settings: ModelSettings = {}
 
             thinking_level: ThinkingLevel = (
-                message.modes["reasoning"]  # type: ignore[assignment]
-                if message.modes
-                else default_thinking or "medium"
+                message.modes["reasoning"] if message.modes else settings.THINKING  # type: ignore[assignment]
             )  # type: ignore[ty:invalid-assignment]
             if thinking_level == "none":
                 thinking_level = False

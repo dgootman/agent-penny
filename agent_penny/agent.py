@@ -1,4 +1,3 @@
-import os
 from typing import Any, Callable
 
 from loguru import logger
@@ -15,17 +14,18 @@ from agent_penny.capabilities.telegram import TelegramCapability
 from agent_penny.capabilities.web import WebFetchCapability
 from agent_penny.chainlit_utils import get_user
 from agent_penny.models.codex import CodexOpenAIResponsesModel
+from agent_penny.settings import settings
 from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
 from agent_penny.tools.tavily_search import tavily_search
 
 # default_model can be overriden for tests
-default_model: str | Model = os.environ["MODEL"]
+default_model: str | Model | None = settings.MODEL
 
 
 def create() -> Agent:
     user = get_user()
-    settings = user_data.load_settings()
+    user_settings = user_data.load_settings()
 
     tools: list[Callable[..., Any] | Tool] = []
 
@@ -39,16 +39,16 @@ def create() -> Agent:
 
         toolsets.append(GoogleProvider().toolset)
 
-    if "PERPLEXITY_API_KEY" in os.environ:
+    if settings.PERPLEXITY_API_KEY:
         tools.append(perplexity)
 
-    if "TAVILY_API_KEY" in os.environ:
+    if settings.TAVILY_API_KEY:
         tools.append(tavily_search)
 
-    if os.environ.get("DUCKDUCKGO_SEARCH_ENABLED") == "true":
+    if settings.DUCKDUCKGO_SEARCH_ENABLED:
         tools.append(duckduckgo_search_tool())
 
-    model = settings.get("model") or default_model
+    model = user_settings.get("model") or default_model
 
     if isinstance(model, str) and ":" in model:
         provider, model_id = model.split(":", 1)
