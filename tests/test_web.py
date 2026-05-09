@@ -10,8 +10,11 @@ async def test_fetch_raw():
     result = await web_fetch("https://api.github.com/repos/dgootman/agent-penny")
 
     assert result
+    assert result.success
+    assert result.status_code == 200
 
-    data = json.loads(result)
+    assert result.content
+    data = json.loads(result.content)
     assert "name" in data
     assert data["name"] == "agent-penny"
 
@@ -25,6 +28,11 @@ async def test_fetch_markdown():
     )
 
     assert result
-    assert "secretary" in result.lower()
-    assert "Lois Maxwell" in result
-    assert "James Bond" in result
+    assert result.success
+    assert result.status_code == 200
+
+    assert result.content
+    content = result.content
+    assert "secretary" in content.lower()
+    assert "Lois Maxwell" in content
+    assert "James Bond" in content

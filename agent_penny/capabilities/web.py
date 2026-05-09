@@ -5,6 +5,7 @@ from typing import Any, Literal, override
 import httpx
 from fake_useragent import UserAgent
 from markitdown import MarkItDown, StreamInfo
+from pydantic import BaseModel
 from pydantic_ai import ModelRetry
 from pydantic_ai.capabilities import AbstractCapability
 from pydantic_ai.toolsets import AgentToolset, FunctionToolset
@@ -15,27 +16,38 @@ user_agent = UserAgent().chrome
 toolset = FunctionToolset()
 
 
+class WebResponse(BaseModel):
+    success: bool
+    status_code: int
+    content: str
+
+
 @toolset.tool_plain()
-async def web_fetch(url: str, *, format: Literal["raw", "markdown"] = "raw"):
+async def web_fetch(
+    url: str, *, format: Literal["raw", "markdown"] = "raw"
+) -> WebResponse:
     """Fetch a URL and return its response body as raw text or converted markdown."""
 
     async with httpx.AsyncClient(timeout=300) as client:
         response = await client.get(url, headers={"User-Agent": user_agent})
 
-        if not response.is_success:
-            raise ModelRetry(
-                f"Fetching failed: HTTP {response.status_code}\n{response.text}"
-            )
-
         if format == "raw":
-            return response.text
+            content = response.text
         elif format == "markdown":
-            return md.convert_stream(
+            content = md.convert_stream(
                 BytesIO(response.content),
-                stream_info=StreamInfo(mimetype=response.headers["content-type"]),
+                stream_info=StreamInfo(
+                    mimetype=response.headers.get("content-type", "text/html")
+                ),
             ).markdown
         else:
             raise ModelRetry(f"Invalid format: {format}")
+
+        return WebResponse(
+            success=response.is_success,
+            status_code=response.status_code,
+            content=content,
+        )
 
 
 @dataclass
