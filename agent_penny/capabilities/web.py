@@ -4,6 +4,7 @@ from typing import Any, Literal, override
 
 import httpx
 from fake_useragent import UserAgent
+from httpx import HTTPError
 from markitdown import MarkItDown, StreamInfo
 from pydantic import BaseModel
 from pydantic_ai import ModelRetry
@@ -22,14 +23,38 @@ class WebResponse(BaseModel):
     content: str
 
 
+class WebError(BaseModel):
+    error: str
+    message: str
+
+
 @toolset.tool_plain()
 async def web_fetch(
-    url: str, *, format: Literal["raw", "markdown"] = "raw"
-) -> WebResponse:
-    """Fetch a URL and return its response body as raw text or converted markdown."""
+    url: str,
+    *,
+    format: Literal["raw", "markdown"] = "raw",
+    timeout=15.0,
+) -> WebResponse | WebError:
+    """
+    Fetch a URL and return its response body as raw text or converted markdown.
 
-    async with httpx.AsyncClient(timeout=300) as client:
-        response = await client.get(url, headers={"User-Agent": user_agent})
+    Args:
+        url: url to fetch
+        format: raw or convert to markdown
+        timeout: timeout in seconds
+    """
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        try:
+            response = await client.get(
+                url,
+                headers={
+                    "User-Agent": user_agent,
+                    "Accept-Encoding": "gzip",  # Respect Wikipedia's Robot Policy: https://wikitech.wikimedia.org/wiki/Robot_policy
+                },
+            )
+        except HTTPError as e:
+            return WebError(error=type(e).__name__, message=str(e))
 
         if format == "raw":
             content = response.text
