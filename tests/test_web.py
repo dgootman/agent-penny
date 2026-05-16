@@ -47,9 +47,9 @@ async def test_fetch_markdown():
         (
             "https://tools-httpstatus.pickup-services.com/200?sleep=1000",
             0.1,
-            ["ConnectTimeout", "ReadTimeout"],
+            ["TimeoutError"],
         ),
-        ("https://no-such.example.org", 5, ["ConnectError"]),
+        ("https://no-such.example.org", 5, ["ClientConnectorDNSError"]),
     ],
 )
 async def test_fetch_error(url: str, timeout: float, errors: list[str]):

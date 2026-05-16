@@ -1,10 +1,11 @@
+from asyncio import TimeoutError
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, Literal, override
 
-import httpx
+import aiohttp
+from aiohttp import ClientError
 from fake_useragent import UserAgent
-from httpx import HTTPError
 from markitdown import MarkItDown, StreamInfo
 from pydantic import BaseModel
 from pydantic_ai import ModelRetry
@@ -44,35 +45,30 @@ async def web_fetch(
         timeout: timeout in seconds
     """
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
+    async with aiohttp.ClientSession(
+        timeout=aiohttp.ClientTimeout(total=timeout), headers={"User-Agent": user_agent}
+    ) as session:
         try:
-            response = await client.get(
-                url,
-                headers={
-                    "User-Agent": user_agent,
-                    "Accept-Encoding": "gzip",  # Respect Wikipedia's Robot Policy: https://wikitech.wikimedia.org/wiki/Robot_policy
-                },
-            )
-        except HTTPError as e:
+            async with session.get(url) as response:
+                if format == "raw":
+                    content = await response.text()
+                elif format == "markdown":
+                    content = md.convert_stream(
+                        BytesIO(await response.content.read()),
+                        stream_info=StreamInfo(
+                            mimetype=response.content_type or "text/html"
+                        ),
+                    ).markdown
+                else:
+                    raise ModelRetry(f"Invalid format: {format}")
+
+                return WebResponse(
+                    success=response.ok,
+                    status_code=response.status,
+                    content=content,
+                )
+        except (ClientError, TimeoutError) as e:
             return WebError(error=type(e).__name__, message=str(e))
-
-        if format == "raw":
-            content = response.text
-        elif format == "markdown":
-            content = md.convert_stream(
-                BytesIO(response.content),
-                stream_info=StreamInfo(
-                    mimetype=response.headers.get("content-type", "text/html")
-                ),
-            ).markdown
-        else:
-            raise ModelRetry(f"Invalid format: {format}")
-
-        return WebResponse(
-            success=response.is_success,
-            status_code=response.status_code,
-            content=content,
-        )
 
 
 @dataclass
