@@ -1,6 +1,6 @@
 import os
+import threading
 from dataclasses import dataclass
-from functools import cache
 from typing import Any, override
 
 from aiogram import Bot
@@ -10,12 +10,19 @@ from loguru import logger
 from pydantic_ai import AgentToolset, FunctionToolset, ModelRetry
 from pydantic_ai.capabilities import AbstractCapability
 
+
+class LocalBot(threading.local):
+    def __init__(self):
+        if telegram_bot_token := os.environ.get("TELEGRAM_BOT_TOKEN"):
+            self.bot = Bot(telegram_bot_token)
+
+
 toolset = FunctionToolset()
+local = LocalBot()
 
 
-@cache
 def _bot() -> Bot:
-    return Bot(os.environ["TELEGRAM_BOT_TOKEN"])
+    return local.bot
 
 
 @toolset.tool_plain

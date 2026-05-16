@@ -43,4 +43,3 @@ async def test_telegram_send(text: str, format: ParseMode):
         await telegram_send(os.environ["TELEGRAM_CHAT_ID"], text, format)
     finally:
         await _bot().session.close()
-        _bot.cache_clear()
