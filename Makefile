@@ -49,4 +49,4 @@ sync:
 
 .PHONY: test
 test:
-	uv run pytest -n auto
+	uv run pytest -n logical
