@@ -41,13 +41,22 @@ async def test_fetch_markdown():
 
 
 @pytest.mark.asyncio
-async def test_fetch_timeout():
+@pytest.mark.parametrize(
+    "url,timeout,errors",
+    [
+        (
+            "https://tools-httpstatus.pickup-services.com/200?sleep=1000",
+            0.1,
+            ["ConnectTimeout", "ReadTimeout"],
+        ),
+        ("https://no-such.example.org", 5, ["ConnectError"]),
+    ],
+)
+async def test_fetch_error(url: str, timeout: float, errors: list[str]):
     from agent_penny.capabilities.web import WebError, web_fetch
 
-    result = await web_fetch(
-        "https://tools-httpstatus.pickup-services.com/200?sleep=1000", timeout=0.01
-    )
+    result = await web_fetch(url, timeout=timeout)
 
     assert result
     assert isinstance(result, WebError)
-    assert result.error in ["ConnectTimeout", "ReadTimeout"]
+    assert result.error in errors
