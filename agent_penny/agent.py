@@ -37,9 +37,7 @@ def create() -> Agent:
     if user.metadata.get("provider") == "google":
         from agent_penny.providers.google import GoogleProvider
 
-        provider = GoogleProvider()
-        toolsets.append(provider.toolset)
-        # await cl.Message(provider.credentials.to_json()).send()
+        toolsets.append(GoogleProvider().toolset)
 
     if "PERPLEXITY_API_KEY" in os.environ:
         tools.append(perplexity)
@@ -52,8 +50,12 @@ def create() -> Agent:
 
     model = settings.get("model") or default_model
 
-    if isinstance(model, str) and model.split(":", 1)[0] == "openai-codex":
-        model = CodexOpenAIResponsesModel(model.split(":", 1)[1])
+    if isinstance(model, str) and ":" in model:
+        provider, model_id = model.split(":", 1)
+        if provider == "openai":
+            model = f"openai-responses:{model_id}"
+        elif provider == "openai-codex":
+            model = CodexOpenAIResponsesModel(model_id)
 
     logger.debug(
         "Creating agent",
