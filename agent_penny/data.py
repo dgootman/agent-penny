@@ -81,8 +81,11 @@ class LocalDataLayer(BaseDataLayer):
 
             user_file.write_text(persisted_user.to_json())
 
-        # Override the user's metadata with the metadata from the authenticated user
-        persisted_user.metadata = user.metadata
+        if persisted_user.metadata != user.metadata:
+            # Override the user's metadata with the metadata from the authenticated user
+            persisted_user.metadata = user.metadata
+            user_file.write_text(persisted_user.to_json())
+
         return persisted_user
 
     @entry_point
