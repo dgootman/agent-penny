@@ -5,7 +5,11 @@ from dataclasses import dataclass
 from functools import cache
 from typing import Any, Literal, override
 
+import httpx
 import openai
+from httpx import HTTPStatusError
+from loguru import logger
+from pydantic_ai import ModelRetry
 from pydantic_ai.capabilities import AbstractCapability
 from pydantic_ai.toolsets import AgentToolset, FunctionToolset
 
@@ -50,6 +54,48 @@ async def generate_image_openai(
     return save_image(prompt, b64decode(image.b64_json))
 
 
+async def generate_image_ideogram(
+    prompt: str,
+    negative_prompt: str | None = None,
+    rendering_speed: Literal["TURBO", "DEFAULT", "QUALITY"] = "TURBO",
+) -> str:
+    """
+    Generate a single image from the prompt and return its web path.
+    Select the 'TURBO' rendering speed unless explicitly instructed otherwise.
+    """
+
+    # Generate with Ideogram 3.0 (POST /v1/ideogram-v3/generate)
+    request = {
+        "prompt": prompt,
+        "rendering_speed": rendering_speed,
+    }
+    if negative_prompt:
+        request["negative_prompt"] = negative_prompt
+
+    async with httpx.AsyncClient(timeout=300) as client:
+        response = await client.post(
+            "https://api.ideogram.ai/v1/ideogram-v3/generate",
+            headers={"Api-Key": os.environ["IDEOGRAM_API_KEY"]},
+            json=request,
+        )
+
+        try:
+            response.raise_for_status()
+        except HTTPStatusError as e:
+            raise ModelRetry("Failed to generate image") from e
+
+        logger.debug("Image generated", response=response.json())
+
+        url = response.json()["data"][0]["url"]
+        response = await client.get(url)
+        try:
+            response.raise_for_status()
+        except HTTPStatusError as e:
+            raise ModelRetry(f"Failed to get image: {url}") from e
+
+        return save_image(prompt, response.content)
+
+
 @dataclass
 class ImageGenerationCapability(AbstractCapability[Any]):
     @override
@@ -58,5 +104,8 @@ class ImageGenerationCapability(AbstractCapability[Any]):
 
         if "OPENAI_API_KEY" in os.environ:
             toolset.add_function(generate_image_openai)
+
+        if "IDEOGRAM_API_KEY" in os.environ:
+            toolset.add_function(generate_image_ideogram)
 
         return toolset
