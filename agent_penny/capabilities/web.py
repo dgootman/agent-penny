@@ -4,7 +4,7 @@ from io import BytesIO
 from typing import Any, Literal, override
 
 import aiohttp
-from aiohttp import ClientError
+from aiohttp import ClientConnectorDNSError, ClientError
 from fake_useragent import UserAgent
 from markitdown import MarkItDown, StreamInfo
 from pydantic import BaseModel
@@ -25,7 +25,7 @@ class WebResponse(BaseModel):
 
 
 class WebError(BaseModel):
-    error: str
+    error: Literal["Timeout", "DnsLookup"] | str
     message: str
 
 
@@ -68,7 +68,13 @@ async def web_fetch(
                     content=content,
                 )
         except (ClientError, TimeoutError) as e:
-            return WebError(error=type(e).__name__, message=str(e))
+            error_type_map: dict[type[Exception], str] = {
+                TimeoutError: "TimeoutError",
+                ClientConnectorDNSError: "DnsLookupError",
+            }
+
+            error = error_type_map.get(type(e)) or type(e).__name__
+            return WebError(error=error, message=str(e))
 
 
 @dataclass

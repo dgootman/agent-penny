@@ -1,6 +1,8 @@
 import json
+from pathlib import Path
 
 import pytest
+from pytest_httpserver import HTTPServer
 
 
 @pytest.mark.asyncio
@@ -21,11 +23,18 @@ async def test_fetch_raw():
 
 
 @pytest.mark.asyncio
-async def test_fetch_markdown():
+async def test_fetch_markdown(httpserver: HTTPServer):
     from agent_penny.capabilities.web import WebResponse, web_fetch
 
+    # Mock Wikipedia response since Wikipedia is blocking Github tests
+    httpserver.expect_request("/wiki/Miss_Moneypenny").respond_with_data(
+        Path("tests/wikipedia_Miss_Moneypenny.html").read_text(),
+        200,
+        content_type="text/html",
+    )
+
     result = await web_fetch(
-        "https://en.wikipedia.org/wiki/Miss_Moneypenny", format="markdown"
+        httpserver.url_for("/wiki/Miss_Moneypenny"), format="markdown"
     )
 
     assert result
@@ -49,7 +58,7 @@ async def test_fetch_markdown():
             0.1,
             ["TimeoutError"],
         ),
-        ("https://no-such.example.org", 5, ["ClientConnectorDNSError"]),
+        ("https://no-such.example.org", 5, ["DnsLookupError"]),
     ],
 )
 async def test_fetch_error(url: str, timeout: float, errors: list[str]):
