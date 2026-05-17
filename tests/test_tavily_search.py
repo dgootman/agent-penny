@@ -3,14 +3,14 @@ import os
 import pytest
 from loguru import logger
 
-from agent_penny.tools.tavily_search import tavily_search
-
 pytestmark = pytest.mark.skipif(
     not os.environ.get("TAVILY_API_KEY"), reason="TAVILY_API_KEY not set"
 )
 
 
 def test_tavily():
+    from agent_penny.tools.tavily_search import tavily_search
+
     query = "Who is Miss Moneypenny?"
 
     results = tavily_search(query)
