@@ -59,6 +59,13 @@ async def test_fetch_markdown(httpserver: HTTPServer):
             ["TimeoutError"],
         ),
         ("https://no-such.example.org", 5, ["DnsLookupError"]),
+        ("https://expired.badssl.com", 5, ["CertificateError"]),
+        ("https://wrong.host.badssl.com", 5, ["CertificateError"]),
+        ("https://self-signed.badssl.com", 5, ["CertificateError"]),
+        ("https://untrusted-root.badssl.com", 5, ["CertificateError"]),
+        # TODO: Figure out how to enable revocation and pinning
+        # ("https://revoked.badssl.com", 5, ["CertificateError"]),
+        # ("https://pinning-test.badssl.com", 5, ["CertificateError"]),
     ],
 )
 async def test_fetch_error(url: str, timeout: float, errors: list[str]):

@@ -4,7 +4,11 @@ from io import BytesIO
 from typing import Any, Literal, override
 
 import aiohttp
-from aiohttp import ClientConnectorDNSError, ClientError
+from aiohttp import (
+    ClientConnectorCertificateError,
+    ClientConnectorDNSError,
+    ClientError,
+)
 from fake_useragent import UserAgent
 from markitdown import MarkItDown, StreamInfo
 from pydantic import BaseModel
@@ -69,8 +73,9 @@ async def web_fetch(
                 )
         except (ClientError, TimeoutError) as e:
             error_type_map: dict[type[Exception], str] = {
-                TimeoutError: "TimeoutError",
+                ClientConnectorCertificateError: "CertificateError",
                 ClientConnectorDNSError: "DnsLookupError",
+                TimeoutError: "TimeoutError",
             }
 
             error = error_type_map.get(type(e)) or type(e).__name__
