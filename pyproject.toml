@@ -76,6 +76,3 @@ extend-select = [
     # isort
     "I",
 ]
-
-[tool.ty.src]
-exclude = ["tests"]

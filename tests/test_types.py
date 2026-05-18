@@ -9,6 +9,7 @@ def test_annotations():
 
     tool = Tool(calendar_create_event)
     assert tool.name == "calendar_create_event"
+    assert tool.description
     assert "Request to create a calendar event." in tool.description
     assert (
         "Start and end times are either full dates (for all-day events) or date, time, and timezone (for non-all-day events)."
