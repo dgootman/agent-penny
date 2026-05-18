@@ -65,6 +65,15 @@
                 "attachFiles": "Joindre des fichiers"
             }
         },
+        "favorites": {
+            "use": "Utiliser un message favori",
+            "headline": "Messages favoris",
+            "remove": "Supprimer des favoris",
+            "empty": {
+                "title": "Aucun prompt enregistr\u00e9 pour le moment",
+                "description": "Commencez par envoyer un prompt et ajoutez-le aux favoris ou ajoutez un prompt de discussions pr\u00e9c\u00e9dentes aux favoris"
+            }
+        },
         "commands": {
             "button": "Outils",
             "changeTool": "Changer d'outil",
@@ -240,6 +249,12 @@
     "components": {
         "MultiSelectInput": {
             "placeholder": "S\u00e9lectionner..."
+        },
+        "DatePickerInput": {
+            "placeholder": {
+                "single": "Choisir une date",
+                "range": "Choisir une plage de dates"
+            }
         }
     }
 }

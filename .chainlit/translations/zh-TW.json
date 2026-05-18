@@ -83,6 +83,15 @@
                 "removeAttachment": "\u79fb\u9664\u9644\u4ef6"
             }
         },
+        "favorites": {
+            "use": "\u4f7f\u7528\u6536\u85cf\u7684\u8a0a\u606f",
+            "headline": "\u6536\u85cf\u7684\u8a0a\u606f",
+            "remove": "\u79fb\u9664\u6536\u85cf",
+            "empty": {
+                "title": "\u5c1a\u672a\u5132\u5b58\u7684\u63d0\u793a",
+                "description": "\u5f9e\u767c\u9001\u63d0\u793a\u4e26\u52a0\u661f\u865f\u958b\u59cb\uff0c\u6216\u5f9e\u4e4b\u524d\u7684\u804a\u5929\u4e2d\u52a0\u661f\u865f\u63d0\u793a"
+            }
+        },
         "commands": {
             "button": "\u5de5\u5177",
             "changeTool": "\u66f4\u63db\u5de5\u5177",
@@ -240,6 +249,12 @@
     "components": {
         "MultiSelectInput": {
             "placeholder": "\u9078\u64c7..."
+        },
+        "DatePickerInput": {
+            "placeholder": {
+                "single": "\u9078\u64c7\u65e5\u671f",
+                "range": "\u9078\u64c7\u65e5\u671f\u7bc4\u570d"
+            }
         }
     }
 }

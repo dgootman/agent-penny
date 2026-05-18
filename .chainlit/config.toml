@@ -29,6 +29,9 @@ unsafe_allow_html = false
 # Process and display mathematical expressions. This can clash with "$" characters in messages.
 latex = false
 
+# Enable rendering of user messages markdown
+user_message_markdown = true
+
 # Autoscroll new user messages at the top of the window
 user_message_autoscroll = true
 
@@ -43,6 +46,9 @@ edit_message = true
 
 # Allow users to share threads (backend + UI). Requires an app-defined on_shared_thread_view callback.
 allow_thread_sharing = false
+
+# Enable favorite messages
+favorites = false
 
 [features.slack]
 # Add emoji reaction when message is received (requires reactions:write OAuth scope)
@@ -99,7 +105,16 @@ name = "Agent Penny"
 
 # layout = "wide"
 
-# default_sidebar_state = "open"
+# default_sidebar_state = "open"  # Options: "open", "closed", "hidden"
+
+# Chat settings display location: "message_composer" (default) or "sidebar" (header)
+# chat_settings_location = "message_composer"
+
+# Default state of chat settings sidebar when location is "sidebar"
+# default_chat_settings_open = false
+
+# Whether to prompt user confirmation on clicking 'New Chat'
+confirm_new_chat = true
 
 # Description of the assistant. This is used for HTML tags.
 # description = ""
@@ -132,7 +147,7 @@ alert_style = "classic"
 # login_page_image_dark_filter = "contrast-200 blur-sm"
 
 # Specify a custom meta URL (used for meta tags like og:url)
-# custom_meta_url = "https://github.com/Chainlit/chainlit"
+custom_meta_url = "https://github.com/dgootman/agent-penny"
 
 # Specify a custom meta image url.
 # custom_meta_image_url = "https://chainlit-cloud.s3.eu-west-3.amazonaws.com/logo/chainlit_banner.png"
@@ -142,6 +157,9 @@ logo_file_url = ""
 
 # Load assistant avatar image directly from URL.
 default_avatar_file_url = ""
+
+# Avatar size in pixels (default: 20).
+# avatar_size = 20
 
 # Specify a custom build directory for the frontend.
 # This can be used to customize the frontend code.
@@ -157,4 +175,4 @@ default_avatar_file_url = ""
 #     target = "_blank" (default)  # Optional: "_self", "_parent", "_top".
 
 [meta]
-generated_by = "2.9.4"
+generated_by = "2.11.1"
