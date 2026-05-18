@@ -81,6 +81,7 @@ class SkillsCapability(AbstractCapability[Any]):
                             ),
                             "button": False,
                             "persistent": True,
+                            "selected": False,
                         }
                         for skill in skill_catalog.available_skills
                     ]
