@@ -2,6 +2,7 @@ import asyncio
 import getpass
 import logging
 import os
+import zoneinfo
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -181,6 +182,7 @@ async def render_settings():
 
     user_settings = user_data.load_settings()
     user_model = user_settings.get("model") or settings.MODEL
+    user_timezone = user_settings.get("timezone")
 
     setting_inputs: list[InputWidget] = []
 
@@ -206,6 +208,15 @@ async def render_settings():
             id="custom_model",
             label="Custom Model",
             initial=None if user_model in available_models else user_model,
+        )
+    )
+
+    setting_inputs.append(
+        Select(
+            id="timezone",
+            label="Timezone",
+            initial_value=user_timezone,
+            values=sorted(zoneinfo.available_timezones()),
         )
     )
 
@@ -333,6 +344,11 @@ async def on_settings_update(chat_settings: dict[str, Any]):
         custom_model = chat_settings.pop("custom_model", None)
         if custom_model:
             chat_settings["model"] = custom_model
+
+        # Remove keys with empty values
+        for key in chat_settings.keys():
+            if not chat_settings[key]:
+                del chat_settings[key]
 
         # TODO: Validate that chat settings match the user-setting structure
         user_data.save_settings(chat_settings)  # type: ignore[arg-type,ty:invalid-argument-type]

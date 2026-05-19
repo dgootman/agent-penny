@@ -35,6 +35,7 @@ def save(file_name: str, content: str) -> None:
 class UserSettings(TypedDict):
     model: NotRequired[str]
     thinking: NotRequired[bool]
+    timezone: NotRequired[str]
 
 
 def load_settings() -> UserSettings:
