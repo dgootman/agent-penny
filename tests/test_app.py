@@ -39,6 +39,7 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     import agent_penny.user_data
     import app
 
+    instructions: list[str | None] = []
     requests: list[ModelRequest] = []
     model_responses: list[
         str | DeltaToolCalls | DeltaThinkingCalls | BuiltinToolCallsReturns
@@ -55,6 +56,8 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     ) -> AsyncIterator[
         str | DeltaToolCalls | DeltaThinkingCalls | BuiltinToolCallsReturns
     ]:
+        instructions.append(info.instructions)
+
         assert messages[-1].kind == "request"
         requests.append(messages[-1])
 
@@ -117,18 +120,23 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     responses = [m for m in message_history if m.kind == "response"]
 
+    assert len(instructions) == 3
     assert len(requests) == 3
     assert len(responses) == 3
 
-    request = requests.pop(0)
-    assert len(request.parts) == 2
-    assert request.parts[0].part_kind == "system-prompt"
     assert (
-        request.parts[0].content
-        == "You know the following from previous conversations: You are a test agent."
+        instructions[0]
+        == "You remember the following from previous conversations: You are a test agent."
     )
-    assert request.parts[1].part_kind == "user-prompt"
-    assert request.parts[1].content == "Who is Agent Penny?"
+    assert (
+        instructions[-1]
+        == "You remember the following from previous conversations: You are a good test agent."
+    )
+
+    request = requests.pop(0)
+    assert len(request.parts) == 1
+    assert request.parts[0].part_kind == "user-prompt"
+    assert request.parts[0].content == "Who is Agent Penny?"
 
     response = responses.pop(0)
     assert len(response.parts) == 2

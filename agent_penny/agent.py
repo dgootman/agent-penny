@@ -8,6 +8,7 @@ from pydantic_ai.models import Model
 from agent_penny import user_data
 from agent_penny.capabilities.date import DateTimeCapability
 from agent_penny.capabilities.images import ImageGenerationCapability
+from agent_penny.capabilities.memory import MemoryCapability
 from agent_penny.capabilities.scheduling import SchedulingCapability
 from agent_penny.capabilities.skills import SkillsCapability
 from agent_penny.capabilities.telegram import TelegramCapability
@@ -15,7 +16,6 @@ from agent_penny.capabilities.web import WebFetchCapability
 from agent_penny.chainlit_utils import get_user
 from agent_penny.models.codex import CodexOpenAIResponsesModel
 from agent_penny.settings import settings
-from agent_penny.tools.memory import MemoryProvider
 from agent_penny.tools.perplexity import perplexity
 from agent_penny.tools.tavily_search import tavily_search
 
@@ -30,9 +30,6 @@ def create() -> Agent:
     tools: list[Callable[..., Any] | Tool] = []
 
     toolsets: list[AbstractToolset[Any]] = []
-
-    memory = MemoryProvider()
-    toolsets.append(memory.toolset)
 
     if user.metadata.get("provider") == "google":
         from agent_penny.providers.google import GoogleProvider
@@ -71,12 +68,10 @@ def create() -> Agent:
         capabilities=[
             DateTimeCapability(),
             ImageGenerationCapability(),
+            MemoryCapability(),
             SchedulingCapability(),
             SkillsCapability(),
             TelegramCapability(),
             WebFetchCapability(),
-        ],
-        system_prompt=[
-            f"You know the following from previous conversations: {memory.load_memory()}"
         ],
     )
