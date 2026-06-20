@@ -45,10 +45,10 @@ async def test_fetch_wikipedia(httpserver: HTTPServer):
                 200,
                 '"name": "agent-penny"',
             ),
-            ("https://httpbin.org/html", format, 200, "Herman Melville - Moby-Dick"),
-            ("https://httpbin.org/json", format, 200, "Sample Slide Show"),
-            ("https://httpbin.org/xml", format, 200, "Wake up to WonderWidgets!"),
-            ("https://httpbin.org/encoding/utf8", format, 200, "STARGΛ̊TE SG-1"),
+            ("https://httpbin.io/html", format, 200, "Herman Melville - Moby-Dick"),
+            ("https://httpbin.io/json", format, 200, "Sample Slide Show"),
+            ("https://httpbin.io/xml", format, 200, "Wake up to WonderWidgets!"),
+            ("https://httpbin.io/encoding/utf8", format, 200, "STARGΛ̊TE SG-1"),
         ]
     ],
 )
@@ -72,7 +72,7 @@ async def test_fetch_response(
 @pytest.mark.parametrize(
     "url,timeout,error",
     [
-        ("https://httpbin.org/delay/1", 0.1, "TimeoutError"),
+        ("https://httpbin.io/delay/1", 0.1, "TimeoutError"),
         ("https://no-such.example.org", 5, "DnsLookupError"),
         ("https://expired.badssl.com", 5, "CertificateError"),
         ("https://wrong.host.badssl.com", 5, "CertificateError"),
