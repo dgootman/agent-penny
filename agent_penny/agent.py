@@ -7,6 +7,7 @@ from pydantic_ai.models import Model
 
 from agent_penny import user_data
 from agent_penny.capabilities.date import DateTimeCapability
+from agent_penny.capabilities.google_maps import GoogleMapsCapability
 from agent_penny.capabilities.images import ImageGenerationCapability
 from agent_penny.capabilities.memory import MemoryCapability
 from agent_penny.capabilities.scheduling import SchedulingCapability
@@ -67,6 +68,7 @@ def create() -> Agent:
         toolsets=toolsets,
         capabilities=[
             DateTimeCapability(),
+            GoogleMapsCapability(),
             ImageGenerationCapability(),
             MemoryCapability(),
             SchedulingCapability(),
