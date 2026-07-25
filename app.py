@@ -37,6 +37,10 @@ from ua_parser import parse_user_agent
 from agent_penny import user_data, user_data_server
 from agent_penny.agent import create as agent_create
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
+from agent_penny.available_models import (
+    AVAILABLE_MODELS_BY_PROVIDER,
+    MODEL_ENV_VARS_BY_PROVIDER,
+)
 from agent_penny.chainlit_utils import get_user
 from agent_penny.data import LocalDataLayer
 from agent_penny.logging import InterceptHandler, json_log_sink
@@ -139,47 +143,6 @@ async def set_starters(user: cl.User | None):
 
 
 async def render_settings():
-    env_vars_by_provider = {
-        "anthropic": "ANTHROPIC_API_KEY",
-        "bedrock": "BEDROCK_ENABLE",  # Bedrock uses AWS credentials, which have different ways of being provisioned
-        "google-gla": "GOOGLE_API_KEY",
-        "openai": "OPENAI_API_KEY",
-        "openai-codex": "OPENAI_CODEX_ENABLE",
-    }
-
-    available_models_by_provider = {
-        "anthropic": [  # https://platform.claude.com/docs/en/about-claude/models/overview
-            "anthropic:claude-opus-4-6",
-            "anthropic:claude-sonnet-4-6",
-            "anthropic:claude-haiku-4-5-20251001",
-        ],
-        "bedrock": [  # https://platform.claude.com/docs/en/about-claude/models/overview
-            "bedrock:us.anthropic.claude-opus-4-6-v1",
-            "bedrock:us.anthropic.claude-sonnet-4-6",
-            "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
-        ],
-        "google-gla": [  # https://ai.google.dev/gemini-api/docs/models
-            "google-gla:gemini-3.1-pro-preview",
-            "google-gla:gemini-3-pro-preview",
-            "google-gla:gemini-3-flash-preview",
-            "google-gla:gemini-2.5-pro",
-            "google-gla:gemini-2.5-flash",
-            "google-gla:gemini-2.5-flash-lite",
-        ],
-        "openai": [  # https://developers.openai.com/api/docs/models
-            "openai:gpt-5.5",
-            "openai:gpt-5.4",
-            "openai:gpt-5.4-mini",
-            "openai:gpt-5.4-nano",
-        ],
-        "openai-codex": [  # https://developers.openai.com/codex/models
-            "openai-codex:gpt-5.5",
-            "openai-codex:gpt-5.4",
-            "openai-codex:gpt-5.4-mini",
-            "openai-codex:gpt-5.3-codex",
-        ],
-    }
-
     user_settings = user_data.load_settings()
     user_model = user_settings.get("model") or settings.MODEL
     user_timezone = user_settings.get("timezone")
@@ -188,9 +151,9 @@ async def render_settings():
 
     available_models = [
         model
-        for provider, key in env_vars_by_provider.items()
+        for provider, key in MODEL_ENV_VARS_BY_PROVIDER.items()
         if os.environ.get(key)
-        for model in available_models_by_provider.get(provider, [])
+        for model in AVAILABLE_MODELS_BY_PROVIDER.get(provider, ())
     ]
 
     if available_models:

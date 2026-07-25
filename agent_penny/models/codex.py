@@ -5,6 +5,7 @@ from typing import Any, Optional, override
 
 import chainlit as cl
 import httpx
+from loguru import logger
 from openai import AsyncOpenAI
 from openai._compat import cached_property
 from openai._types import Omit, omit
@@ -193,6 +194,7 @@ class CodexAsyncResponses(AsyncResponses):
         *,
         instructions: Optional[str] | Omit = omit,
         store: Optional[bool] | Omit = omit,
+        max_output_tokens: Optional[int] | Omit = omit,
         **kwargs,
     ):
         if not instructions or instructions == omit:
@@ -201,7 +203,18 @@ class CodexAsyncResponses(AsyncResponses):
         if store is None or store == omit:
             store = False
 
-        return await super().create(instructions=instructions, store=store, **kwargs)
+        if max_output_tokens and max_output_tokens != omit:
+            logger.warning(
+                "max_output_tokens isn't supported by Codex and will be omitted"
+            )
+            max_output_tokens = omit
+
+        return await super().create(
+            instructions=instructions,
+            store=store,
+            max_output_tokens=max_output_tokens,
+            **kwargs,
+        )
 
 
 class CodexAsyncOpenAI(AsyncOpenAI):

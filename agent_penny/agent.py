@@ -6,6 +6,7 @@ from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.models import Model
 
 from agent_penny import user_data
+from agent_penny.available_models import resolve_model
 from agent_penny.capabilities.date import DateTimeCapability
 from agent_penny.capabilities.google_maps import GoogleMapsCapability
 from agent_penny.capabilities.images import ImageGenerationCapability
@@ -15,7 +16,6 @@ from agent_penny.capabilities.skills import SkillsCapability
 from agent_penny.capabilities.telegram import TelegramCapability
 from agent_penny.capabilities.web import WebFetchCapability
 from agent_penny.chainlit_utils import get_user
-from agent_penny.models.codex import CodexOpenAIResponsesModel
 from agent_penny.settings import settings
 from agent_penny.tools.perplexity import perplexity
 from agent_penny.tools.tavily_search import tavily_search
@@ -48,12 +48,7 @@ def create() -> Agent:
 
     model = user_settings.get("model") or default_model
 
-    if isinstance(model, str) and ":" in model:
-        provider, model_id = model.split(":", 1)
-        if provider == "openai":
-            model = f"openai-responses:{model_id}"
-        elif provider == "openai-codex":
-            model = CodexOpenAIResponsesModel(model_id)
+    model = resolve_model(model)
 
     logger.debug(
         "Creating agent",
