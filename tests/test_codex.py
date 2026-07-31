@@ -34,9 +34,10 @@ async def test_codex_agent(capsys: pytest.CaptureFixture[str]):
     agent = Agent(model=CodexOpenAIResponsesModel("gpt-5.4"))
 
     result = None
-    async for event in agent.run_stream_events("Who is Miss Moneypenny?"):
-        if isinstance(event, AgentRunResultEvent):
-            result = event
+    async with agent.run_stream_events("Who is Miss Moneypenny?") as stream:
+        async for event in stream:
+            if isinstance(event, AgentRunResultEvent):
+                result = event
 
     assert result
     assert result.result

@@ -18,8 +18,6 @@ from pydantic_ai import (
     Agent,
     AgentRunResultEvent,
     BinaryContent,
-    FunctionToolCallEvent,
-    FunctionToolResultEvent,
     ModelMessage,
     ModelRequest,
     ModelResponse,
@@ -27,6 +25,8 @@ from pydantic_ai import (
     PartEndEvent,
     RetryPromptPart,
     TextPart,
+    ToolCallEvent,
+    ToolResultEvent,
     ToolReturnPart,
     UserPromptPart,
 )
@@ -372,53 +372,54 @@ async def process_message(
 
             model_settings["thinking"] = thinking_level
 
-            stream = agent.run_stream_events(
+            async with agent.run_stream_events(
                 user_prompt,  # type: ignore[arg-type]
                 message_history=message_history,
                 instructions=additional_instructions,
                 metadata={"skill_name": message.command},
                 model_settings=model_settings,
-            )
+            ) as stream:
+                async for event in stream:
+                    logger.trace("Event received", event=event)
 
-            async for event in stream:
-                logger.trace("Event received", event=event)
+                    if isinstance(event, AgentRunResultEvent):
+                        await cl.Message(event.result.output).send()
+                        cl.user_session.set(
+                            "message_history", event.result.all_messages()
+                        )
 
-                if isinstance(event, AgentRunResultEvent):
-                    await cl.Message(event.result.output).send()
-                    cl.user_session.set("message_history", event.result.all_messages())
+                    if isinstance(event, PartEndEvent):
+                        if event.part.part_kind == "thinking":
+                            async with cl.Step(
+                                "Thinking", type="llm", id=event.part.id
+                            ) as step:
+                                step.output = event.part.content
+                        elif event.part.part_kind == "text":
+                            async with cl.Step(
+                                "Text", type="llm", id=event.part.id
+                            ) as step:
+                                step.output = event.part.content
 
-                if isinstance(event, PartEndEvent):
-                    if event.part.part_kind == "thinking":
-                        async with cl.Step(
-                            "Thinking", type="llm", id=event.part.id
-                        ) as step:
-                            step.output = event.part.content
-                    elif event.part.part_kind == "text":
-                        async with cl.Step(
-                            "Text", type="llm", id=event.part.id
-                        ) as step:
-                            step.output = event.part.content
+                    elif isinstance(event, ToolCallEvent):
+                        step = cl.Step(
+                            event.part.tool_name, type="tool", id=event.tool_call_id
+                        )
+                        step.input = {"input": event.part.args_as_dict()}
 
-                elif isinstance(event, FunctionToolCallEvent):
-                    step = cl.Step(
-                        event.part.tool_name, type="tool", id=event.tool_call_id
-                    )
-                    step.input = {"input": event.part.args_as_dict()}
+                        steps[event.tool_call_id] = step
 
-                    steps[event.tool_call_id] = step
+                        await step.__aenter__()
 
-                    await step.__aenter__()
+                    elif isinstance(event, ToolResultEvent):
+                        step = steps.pop(event.tool_call_id)
 
-                elif isinstance(event, FunctionToolResultEvent):
-                    step = steps.pop(event.tool_call_id)
+                        if isinstance(event.part, ToolReturnPart):
+                            step.output = {"output": event.part.model_response_object()}
+                        elif isinstance(event.part, RetryPromptPart):
+                            step.is_error = True
+                            step.output = {"error": event.part.model_response()}
 
-                    if isinstance(event.result, ToolReturnPart):
-                        step.output = {"output": event.result.model_response_object()}
-                    elif isinstance(event.result, RetryPromptPart):
-                        step.is_error = True
-                        step.output = {"error": event.result.model_response()}
-
-                    await step.__aexit__(None, None, None)
+                        await step.__aexit__(None, None, None)
 
         except Exception as e:
             for step in steps.values():

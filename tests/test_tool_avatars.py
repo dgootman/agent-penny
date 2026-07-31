@@ -1,7 +1,8 @@
 import os
 
 import pytest
-from pydantic_ai import RunContext, RunUsage
+from pydantic_ai import ModelMessage, ModelResponse, TextPart
+from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from .utils import init_chainlit_context
 
@@ -13,13 +14,20 @@ async def test_tool_avatars():
     await init_chainlit_context()
 
     agent = agent_penny.agent.create()
-    ctx = RunContext(deps=None, model=agent.model, usage=RunUsage(), agent=agent)  # ty:ignore[invalid-argument-type]
-    toolset = agent._get_toolset()
-    tools = await toolset.get_tools(ctx)  # ty:ignore[invalid-argument-type]
+    tool_names: list[str] = []
+
+    async def model_function(
+        messages: list[ModelMessage], info: AgentInfo
+    ) -> ModelResponse:
+        tool_names.extend(tool.name for tool in info.function_tools)
+        return ModelResponse(parts=[TextPart("Done")])
+
+    with agent.override(model=FunctionModel(model_function)):
+        await agent.run("List the available tools.")
 
     missing_avatars = [
         f"public/avatars/{tool_name}.png"
-        for tool_name in tools.keys()
+        for tool_name in tool_names
         if not os.path.exists(f"public/avatars/{tool_name}.png")
     ]
 
