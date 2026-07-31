@@ -4,13 +4,13 @@ from loguru import logger
 from pydantic_ai import AbstractToolset, Agent, Tool
 from pydantic_ai.common_tools.duckduckgo import duckduckgo_search_tool
 from pydantic_ai.models import Model
+from pydantic_ai_harness.memory import FileStore, Memory
 
 from agent_penny import user_data
 from agent_penny.available_models import resolve_model
 from agent_penny.capabilities.date import DateTimeCapability
 from agent_penny.capabilities.google_maps import GoogleMapsCapability
 from agent_penny.capabilities.images import ImageGenerationCapability
-from agent_penny.capabilities.memory import MemoryCapability
 from agent_penny.capabilities.scheduling import SchedulingCapability
 from agent_penny.capabilities.skills import SkillsCapability
 from agent_penny.capabilities.telegram import TelegramCapability
@@ -65,7 +65,7 @@ def create() -> Agent:
             DateTimeCapability(),
             GoogleMapsCapability(),
             ImageGenerationCapability(),
-            MemoryCapability(),
+            Memory(FileStore(user_data.path(".agent-memory"))),
             SchedulingCapability(),
             SkillsCapability(),
             TelegramCapability(),

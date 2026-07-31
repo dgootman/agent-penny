@@ -32,6 +32,7 @@ dependencies = [
     { name = "markitdown", extra = ["pdf"] },
     { name = "perplexityai" },
     { name = "piper-tts" },
+    { name = "pydantic-ai-harness" },
     { name = "pydantic-ai-skills" },
     { name = "pydantic-ai-slim", extra = ["anthropic", "bedrock", "duckduckgo", "google", "openai"] },
     { name = "pydantic-settings" },
@@ -82,6 +83,7 @@ requires-dist = [
     { name = "markitdown", extras = ["pdf"], specifier = ">=0.1.4" },
     { name = "perplexityai", specifier = ">=0.26.0" },
     { name = "piper-tts", specifier = ">=1.4.2" },
+    { name = "pydantic-ai-harness", specifier = ">=0.14.0" },
     { name = "pydantic-ai-skills", specifier = ">=0.6.0" },
     { name = "pydantic-ai-slim", extras = ["anthropic", "bedrock", "duckduckgo", "google", "openai"], specifier = ">=2.21.0" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
@@ -3429,6 +3431,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/69/44/36f1a6e523abc58ae5f928898e4aca2e0ea509b5aa6f6f392a5d882be928/pydantic-2.12.5.tar.gz", hash = "sha256:4d351024c75c0f085a9febbb665ce8c0c6ec5d30e903bdb6394b7ede26aebb49", size = 821591, upload-time = "2025-11-26T15:11:46.471Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/87/b70ad306ebb6f9b585f114d0ac2137d792b48be34d732d60e597c2f8465a/pydantic-2.12.5-py3-none-any.whl", hash = "sha256:e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d", size = 463580, upload-time = "2025-11-26T15:11:44.605Z" },
+]
+
+[[package]]
+name = "pydantic-ai-harness"
+version = "0.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic-ai-slim" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fb/5b/e56d80508133773d16eb3f59d2e868fdead1d11dcd8c845587da7605a77d/pydantic_ai_harness-0.14.0.tar.gz", hash = "sha256:a92caeb55b3d27173b90e8f5693f9b87b6fe94d40cc0f68b3b7fad16be4d3e08", size = 1380720, upload-time = "2026-07-30T02:06:48.268Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/f8/7d5a30f05e4c2b3409ac07fc3239a59023dbde45f33c95cdfb7bfb1f7e79/pydantic_ai_harness-0.14.0-py3-none-any.whl", hash = "sha256:0400604998fa90bd11cacfbaf505a523f305f83372ed590b6a3c07b1caacc35d", size = 453742, upload-time = "2026-07-30T02:06:46.356Z" },
 ]
 
 [[package]]

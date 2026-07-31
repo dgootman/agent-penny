@@ -11,7 +11,7 @@ import pytest
 from chainlit.context import init_ws_context
 from chainlit.session import WebsocketSession
 from pydantic import TypeAdapter
-from pydantic_ai import Agent, ModelMessage, ModelRequest
+from pydantic_ai import Agent, ModelMessage, ModelRequest, TextContent
 from pydantic_ai.models import Model
 from pydantic_ai.models.function import (
     AgentInfo,
@@ -28,9 +28,9 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     # Create some test memories.
     # Note: The testing user id is test_user, but we use the slugified form for directories
     users_dir = tmp_path / "users"
-    user_dir = users_dir / "test-user"
-    user_dir.mkdir(parents=True)
-    memory_file = user_dir / "memories.txt"
+    memory_dir = users_dir / "test-user/.agent-memory/"
+    memory_file = memory_dir / "main/MEMORY.md"
+    memory_file.parent.mkdir(parents=True)
     memory_file.write_text("You are a test agent.")
 
     monkeypatch.setenv("MODEL", "test")
@@ -44,8 +44,11 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     model_responses: list[
         str | DeltaToolCalls | DeltaThinkingCalls | BuiltinToolCallsReturns
     ] = [
-        {0: DeltaToolCall("load_memory"), 1: DeltaToolCall("current_time")},
-        {2: DeltaToolCall("save_memory", '{"memory": "You are a good test agent."}')},
+        {
+            0: DeltaToolCall("read_memory", json_args='{"file": "MEMORY.md"}'),
+            1: DeltaToolCall("current_time"),
+        },
+        {2: DeltaToolCall("write_memory", '{"content": "You are a good test agent."}')},
         "Agent Penny is a personal assistant",
     ]
 
@@ -124,31 +127,36 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert len(requests) == 3
     assert len(responses) == 3
 
-    assert (
-        instructions[0]
-        == "You remember the following from previous conversations: You are a test agent."
-    )
-    assert (
-        instructions[-1]
-        == "You remember the following from previous conversations: You are a good test agent."
-    )
+    assert len(set(instructions)) == 1
+
+    instruction = instructions[0]
+    assert instruction
+    assert "This is your persistent memory from previous sessions" in instruction
 
     request = requests.pop(0)
-    assert len(request.parts) == 1
+    assert len(request.parts) == 2
     assert request.parts[0].part_kind == "user-prompt"
     assert request.parts[0].content == "Who is Agent Penny?"
+    assert request.parts[1].part_kind == "user-prompt"
+
+    assert isinstance(request.parts[1].content, list)
+    assert len(request.parts[1].content) == 1
+    assert isinstance(request.parts[1].content[0], TextContent)
+    content = request.parts[1].content[0].content.splitlines()
+    assert "### MEMORY.md" in content
+    assert "You are a test agent." in content
 
     response = responses.pop(0)
     assert len(response.parts) == 2
     assert response.parts[0].part_kind == "tool-call"
-    assert response.parts[0].tool_name == "load_memory"
+    assert response.parts[0].tool_name == "read_memory"
     assert response.parts[1].part_kind == "tool-call"
     assert response.parts[1].tool_name == "current_time"
 
     request = requests.pop(0)
-    assert len(request.parts) == 2
+    assert len(request.parts) == 3
     assert request.parts[0].part_kind == "tool-return"
-    assert request.parts[0].tool_name == "load_memory"
+    assert request.parts[0].tool_name == "read_memory"
     assert request.parts[0].content == "You are a test agent."
     assert request.parts[1].part_kind == "tool-return"
     assert request.parts[1].tool_name == "current_time"
@@ -158,14 +166,15 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     response = responses.pop(0)
     assert len(response.parts) == 1
     assert response.parts[0].part_kind == "tool-call"
-    assert response.parts[0].tool_name == "save_memory"
+    assert response.parts[0].tool_name == "write_memory"
 
     request = requests.pop(0)
-    assert len(request.parts) == 1
+    assert len(request.parts) == 2
     assert request.parts[0].part_kind == "tool-return"
-    assert request.parts[0].tool_name == "save_memory"
-    assert request.parts[0].content is None
-    assert memory_file.read_text() == "You are a good test agent."
+    assert request.parts[0].tool_name == "write_memory"
+    assert isinstance(request.parts[0].content, dict)
+    assert request.parts[0].content["status"] == "appended"
+    assert memory_file.read_text().splitlines()[-1] == "You are a good test agent."
 
     response = responses.pop(0)
     assert len(response.parts) == 1
