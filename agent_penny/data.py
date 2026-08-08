@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import anyio
+from anyio.itertools import islice
 from chainlit.data.base import BaseDataLayer
 from chainlit.element import Element, ElementDict
 from chainlit.step import StepDict
@@ -235,23 +237,48 @@ class LocalDataLayer(BaseDataLayer):
         assert filters.userId
         user_id = filters.userId
 
-        threads: list[ThreadDict] = [
-            json.loads(f.read_text()) for f in self.threads_dir.glob("*.json")
+        file_times = sorted(
+            [
+                ((await f.stat()).st_mtime, f)
+                async for f in anyio.Path(self.threads_dir).glob("*.json")
+            ],
+            reverse=True,
+        )
+
+        start_time = (
+            datetime.now()
+            if pagination.cursor is None
+            else datetime.fromisoformat(pagination.cursor)
+        )
+
+        cutoff = start_time.timestamp()
+        search = filters.search.lower() if filters.search else None
+
+        thread_times: list[tuple[float, ThreadDict]] = [
+            item
+            async for item in islice(
+                (
+                    (time, thread)
+                    for time, file in file_times
+                    if time <= cutoff
+                    for thread in (json.loads(await file.read_text()),)
+                    if thread.get("userId") == user_id
+                    if thread.get("name") is not None
+                    if search is None or search in thread["name"].lower()
+                ),
+                pagination.first + 1,
+            )
         ]
-        threads = [t for t in threads if t.get("name") is not None]
-        threads = [t for t in threads if t.get("userId") == user_id]
-        if filters.search:
-            threads = [
-                t
-                for t in threads
-                if filters.search.lower() in t["name"].lower()  # type: ignore[union-attr,ty:unresolved-attribute]
-            ]
+
+        threads = [thread for _, thread in thread_times][: pagination.first]
 
         return PaginatedResponse(
             pageInfo=PageInfo(
-                hasNextPage=False,
-                startCursor=None,
-                endCursor=None,
+                hasNextPage=len(thread_times) > pagination.first,
+                startCursor=start_time.isoformat(),
+                endCursor=None
+                if not threads
+                else datetime.fromtimestamp(thread_times[-1][0]).isoformat(),
             ),
             data=threads,
         )
