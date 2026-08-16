@@ -18,9 +18,10 @@ class Settings(BaseSettings):
 
     CONVERSATION_HISTORY_ENABLED: bool = False
 
+    DUCKDUCKGO_SEARCH_ENABLED: bool = False
+    EXA_API_KEY: str | None = None
     PERPLEXITY_API_KEY: str | None = None
     TAVILY_API_KEY: str | None = None
-    DUCKDUCKGO_SEARCH_ENABLED: bool = False
     TELEGRAM_BOT_TOKEN: str | None = None
 
     SCHEDULING_DISABLED: bool | None = None

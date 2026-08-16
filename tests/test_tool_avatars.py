@@ -28,7 +28,10 @@ async def test_tool_avatars():
     missing_avatars = [
         f"public/avatars/{tool_name}.png"
         for tool_name in tool_names
-        if not os.path.exists(f"public/avatars/{tool_name}.png")
+        if not any(
+            os.path.exists(f"public/avatars/{tool_name}.{extension}")
+            for extension in ["png", "svg"]
+        )
     ]
 
     assert not missing_avatars

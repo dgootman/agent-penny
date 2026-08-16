@@ -33,7 +33,7 @@ dependencies = [
     { name = "markitdown", extra = ["pdf"] },
     { name = "perplexityai" },
     { name = "piper-tts" },
-    { name = "pydantic-ai-harness" },
+    { name = "pydantic-ai-harness", extra = ["exa"] },
     { name = "pydantic-ai-skills" },
     { name = "pydantic-ai-slim", extra = ["anthropic", "bedrock", "duckduckgo", "google", "openai"] },
     { name = "pydantic-settings" },
@@ -85,7 +85,7 @@ requires-dist = [
     { name = "markitdown", extras = ["pdf"], specifier = ">=0.1.4" },
     { name = "perplexityai", specifier = ">=0.26.0" },
     { name = "piper-tts", specifier = ">=1.4.2" },
-    { name = "pydantic-ai-harness", specifier = ">=0.15.0" },
+    { name = "pydantic-ai-harness", extras = ["exa"], specifier = ">=0.15.0" },
     { name = "pydantic-ai-skills", specifier = ">=0.6.0" },
     { name = "pydantic-ai-slim", extras = ["anthropic", "bedrock", "duckduckgo", "google", "openai"], specifier = ">=2.21.0" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
@@ -952,6 +952,24 @@ version = "3.8.0"
 source = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
 wheels = [
     { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl", hash = "sha256:1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85" },
+]
+
+[[package]]
+name = "exa-py"
+version = "2.18.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpcore" },
+    { name = "httpx" },
+    { name = "openai" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/58/34/16d6d767889fdb86735d5be34dcc5db9f456870815bf3d0ddc8d5fdfbfec/exa_py-2.18.1.tar.gz", hash = "sha256:f571f001ca8122b4432ef795b1c5c0afe97b5d20e84d4a1b769b9a888141e9c7", size = 72979, upload-time = "2026-08-14T15:38:33.854Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/5f/bdd2230640e2792b3048e69bbb70ab65b8ddf8e51e2ef8880d8cce466a1f/exa_py-2.18.1-py3-none-any.whl", hash = "sha256:98a43c8c598b0360ee8c1a014e7433ae92dcbf58af3d40cac701e145c6e2680e", size = 102929, upload-time = "2026-08-14T15:38:32.531Z" },
 ]
 
 [[package]]
@@ -3447,6 +3465,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/57/91/637f34cfb65b9b1a627dc3e4500dff0740c3bd1d369259d40fa11d87e157/pydantic_ai_harness-0.21.0.tar.gz", hash = "sha256:5eb429d47977913ccec3e74e48479a6207863efebff9fa9afc4b20e52b01e44a", size = 2189073, upload-time = "2026-08-15T03:12:54.135Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6b/c1/dd669f17415da4d233581cbac8809ea1c2c3078d113289b96103362cdadc/pydantic_ai_harness-0.21.0-py3-none-any.whl", hash = "sha256:61c1facec51849adc2680569b5abe337e98836ad0e2adc8f79954d01aaa706e6", size = 632221, upload-time = "2026-08-15T03:12:52.466Z" },
+]
+
+[package.optional-dependencies]
+exa = [
+    { name = "exa-py" },
 ]
 
 [[package]]
