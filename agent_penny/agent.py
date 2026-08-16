@@ -8,6 +8,7 @@ from pydantic_ai_harness.memory import FileStore, Memory
 
 from agent_penny import user_data
 from agent_penny.available_models import resolve_model
+from agent_penny.capabilities.compaction import CompactionCapability
 from agent_penny.capabilities.date import DateTimeCapability
 from agent_penny.capabilities.google_maps import GoogleMapsCapability
 from agent_penny.capabilities.images import ImageGenerationCapability
@@ -62,6 +63,7 @@ def create() -> Agent:
         tools=tools,
         toolsets=toolsets,
         capabilities=[
+            CompactionCapability(),
             DateTimeCapability(),
             GoogleMapsCapability(),
             ImageGenerationCapability(),
