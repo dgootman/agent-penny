@@ -9,7 +9,7 @@ MODEL_ENV_VARS_BY_PROVIDER = {
     "anthropic": "ANTHROPIC_API_KEY",
     # Bedrock uses AWS credentials, which have different ways of being provisioned.
     "bedrock": "BEDROCK_ENABLE",
-    "google-gla": "GOOGLE_API_KEY",
+    "google": "GOOGLE_API_KEY",
     "openai": "OPENAI_API_KEY",
     "openai-codex": "OPENAI_CODEX_ENABLE",
 }
@@ -27,15 +27,16 @@ AVAILABLE_MODELS_BY_PROVIDER = {
         "bedrock:us.anthropic.claude-sonnet-5",
         "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
     ),
-    "google-gla": (  # https://ai.google.dev/gemini-api/docs/models
-        "google-gla:gemini-3.6-flash",
-        "google-gla:gemini-3.5-flash",
-        "google-gla:gemini-3.5-flash-lite",
-        "google-gla:gemini-3.1-pro-preview",
-        "google-gla:gemini-3.1-flash-lite",
-        "google-gla:gemini-3-flash-preview",
-        "google-gla:gemini-2.5-pro",
-        "google-gla:gemini-2.5-flash",
+    "google": (  # https://ai.google.dev/gemini-api/docs/models
+        "google:gemini-3.7-flash",
+        "google:gemini-3.6-flash",
+        "google:gemini-3.5-flash",
+        "google:gemini-3.5-flash-lite",
+        "google:gemini-3.1-pro-preview",
+        "google:gemini-3.1-flash-lite",
+        "google:gemini-3-flash-preview",
+        "google:gemini-2.5-pro",
+        "google:gemini-2.5-flash",
     ),
     "openai": (  # https://developers.openai.com/api/docs/models/all
         "openai:gpt-5.6-sol",

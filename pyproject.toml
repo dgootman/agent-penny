@@ -12,6 +12,7 @@ dependencies = [
     "en-core-web-sm",
     "fake-useragent>=2.2.0",
     "faster-whisper>=1.2.1",
+    "genai-prices>=0.1.4",
     "google-api-python-client>=2.188.0",
     "htpy>=25.12.0",
     "logfire[aiohttp-client,httpx,requests]>=4.24.0",

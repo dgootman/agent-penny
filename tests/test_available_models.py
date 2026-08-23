@@ -39,9 +39,9 @@ MODELS_WITHOUT_CONTEXT_WINDOW = (
     "bedrock:us.anthropic.claude-opus-5",
     "bedrock:us.anthropic.claude-sonnet-5",
     "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
-    "google-gla:gemini-3.1-pro-preview",
-    "google-gla:gemini-2.5-pro",
-    "google-gla:gemini-2.5-flash",
+    "google:gemini-3.1-pro-preview",
+    "google:gemini-2.5-pro",
+    "google:gemini-2.5-flash",
 )
 MODELS_WITH_CONTEXT_WINDOW = tuple(
     model for model in AVAILABLE_MODELS if model not in MODELS_WITHOUT_CONTEXT_WINDOW

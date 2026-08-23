@@ -32,7 +32,7 @@ graph TD
 - **Voice Interaction**: Real-time speech-to-text using `faster-whisper`, voice activity detection with `silero-vad`, and high-quality text-to-speech using `kokoro`.
 - **Extensible Toolset**: Add new tools alongside built-ins like current date, memory, and integrations.
 - **User-Specific Persistent Memory**: Per-user memory stored on disk for continuity and personalization.
-- **Multi-LLM Support**: Works with next-generation OpenAI (GPT-5.2), Google (Gemini 3.1 and 2.5), Anthropic (Claude 4.6), and Bedrock-backed models.
+- **Multi-LLM Support**: Works with OpenAI and Codex (GPT-5.6, 5.5, and 5.4), Google (Gemini 3.7 through 2.5), Anthropic (Claude 5 and 4.5), and Bedrock-backed models.
 - **Conversation Starters**: Pre-defined prompts like "📅 Today's Calendar" and "✉️ Mail Summary".
 - **Runtime Chat Settings**: Switch model and thinking mode from Chainlit chat settings, including custom model IDs.
 - **Observability**: OpenTelemetry-based observability via `logfire` and JSON logging via `loguru`.
@@ -133,7 +133,7 @@ Agent Penny can be run without Google OAuth for local development or if you do n
 
     **For Google Gemini:**
     ```bash
-    export MODEL='google-gla:gemini-3-flash-preview' # or google-gla:gemini-3-pro-preview
+    export MODEL='google:gemini-3.7-flash'
     export GOOGLE_API_KEY='your-google-api-key'
     export OAUTH_GOOGLE_CLIENT_ID='your-google-oauth-client-id'
     export OAUTH_GOOGLE_CLIENT_SECRET='your-google-oauth-client-secret'
@@ -143,7 +143,7 @@ Agent Penny can be run without Google OAuth for local development or if you do n
 
     **For OpenAI:**
     ```bash
-    export MODEL='openai:gpt-5.2' # or openai:gpt-5-mini, openai:gpt-5-nano
+    export MODEL='openai:gpt-5.6-sol' # or openai:gpt-5.6-terra, openai:gpt-5.6-luna
     export OPENAI_API_KEY='your-openai-api-key'
     export OAUTH_GOOGLE_CLIENT_ID='your-google-oauth-client-id'
     export OAUTH_GOOGLE_CLIENT_SECRET='your-google-oauth-client-secret'
@@ -153,7 +153,7 @@ Agent Penny can be run without Google OAuth for local development or if you do n
 
     **For Anthropic:**
     ```bash
-    export MODEL='anthropic:claude-opus-4-6' # or anthropic:claude-sonnet-4-6
+    export MODEL='anthropic:claude-opus-5' # or anthropic:claude-sonnet-5
     export ANTHROPIC_API_KEY='your-anthropic-api-key'
     export OAUTH_GOOGLE_CLIENT_ID='your-google-oauth-client-id'
     export OAUTH_GOOGLE_CLIENT_SECRET='your-google-oauth-client-secret'
@@ -205,10 +205,11 @@ The project includes a `Makefile` to simplify common development tasks:
 ### Models & Thinking
 
 - `MODEL`: (Required) Specifies the LLM to use.
-    - **Anthropic**: `anthropic:claude-opus-4-6`, `anthropic:claude-sonnet-4-6`, etc.
-    - **Google**: `google-gla:gemini-3.1-pro-preview`, `google-gla:gemini-3-pro-preview`, `google-gla:gemini-2.5-flash`, etc.
-    - **OpenAI**: `openai:gpt-5.2`, `openai:gpt-5-mini`, etc.
-    - **Bedrock**: `bedrock:us.anthropic.claude-opus-4-6-v1`, `bedrock:us.anthropic.claude-sonnet-4-6`, `bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0`, etc.
+    - **Anthropic**: `anthropic:claude-fable-5`, `anthropic:claude-opus-5`, `anthropic:claude-sonnet-5`, `anthropic:claude-haiku-4-5`.
+    - **Bedrock**: `bedrock:us.anthropic.claude-fable-5`, `bedrock:us.anthropic.claude-opus-5`, `bedrock:us.anthropic.claude-sonnet-5`, `bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0`.
+    - **Google**: `google:gemini-3.7-flash`, `google:gemini-3.6-flash`, `google:gemini-3.5-flash`, `google:gemini-3.5-flash-lite`, `google:gemini-3.1-pro-preview`, `google:gemini-3.1-flash-lite`, `google:gemini-3-flash-preview`, `google:gemini-2.5-pro`, `google:gemini-2.5-flash`.
+    - **OpenAI**: `openai:gpt-5.6-sol`, `openai:gpt-5.6-terra`, `openai:gpt-5.6-luna`, `openai:gpt-5.5`, `openai:gpt-5.4`, `openai:gpt-5.4-mini`, `openai:gpt-5.4-nano`.
+    - **OpenAI Codex**: `openai-codex:gpt-5.6-sol`, `openai-codex:gpt-5.6-terra`, `openai-codex:gpt-5.6-luna`, `openai-codex:gpt-5.5`, `openai-codex:gpt-5.4`, `openai-codex:gpt-5.4-mini`.
 - `THINKING`: (Optional) Set to `true` to enable LLM thinking mode. This allows the model to "reason" before providing an answer, which is displayed as a separate step in the UI.
 
 ### API Keys & Providers
