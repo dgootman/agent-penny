@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TokenUsage Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "hsl(var(--primary) / <alpha-value>)",
+              muted: "hsl(var(--muted) / <alpha-value>)",
+              "muted-foreground":
+                "hsl(var(--muted-foreground) / <alpha-value>)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        --primary: 217 91% 60%;
+        --muted: 214 32% 91%;
+        --muted-foreground: 215 16% 47%;
+      }
+    </style>
+  </head>
+  <body class="grid min-h-screen place-items-center bg-slate-50 p-8">
+    <main class="grid gap-6">
+      <form
+        id="controls"
+        class="grid gap-3 rounded-lg border bg-white p-4 text-sm shadow-sm"
+      >
+        <label class="grid gap-1">
+          <span class="font-medium text-slate-700">total_tokens</span>
+          <input
+            id="total_tokens"
+            class="rounded-md border px-3 py-2 tabular-nums"
+            type="number"
+            min="0"
+            step="1"
+            value="123456"
+          />
+        </label>
+
+        <label class="grid gap-1">
+          <span class="font-medium text-slate-700">context_window</span>
+          <input
+            id="context_window"
+            class="rounded-md border px-3 py-2 tabular-nums"
+            type="number"
+            min="1"
+            step="1"
+            value="400000"
+          />
+        </label>
+      </form>
+
+      <div id="root" class="flex justify-center"></div>
+    </main>
+
+    <script>
+      window.props = {
+        total_tokens: 0,
+        context_window: 0,
+      };
+
+      window.Card = function Card({ className = "", children }) {
+        return React.createElement(
+          "div",
+          {
+            className:
+              "rounded-lg border bg-white text-slate-950 shadow-sm " + className,
+          },
+          children
+        );
+      };
+    </script>
+
+    <script type="module">
+      const response = await fetch("../public/elements/TokenUsage.jsx");
+      let source = await response.text();
+
+      // Chainlit normally bundles custom elements and resolves its `@/` import
+      // alias. This standalone page has no bundler, so remove the Card import,
+      // inject the local window.Card stub into Function below, and turn the
+      // default export into a local declaration that Function can return.
+      source = source
+        .replace(/^\s*import\s+\{\s*Card\s*\}\s+from\s+["'"]@\/components\/ui\/card["'"];?\s*$/m, "")
+        .replace(/export\s+default\s+function\s+TokenUsage/, "function TokenUsage");
+
+      if (/^\s*(?:import|export)\s/m.test(source)) {
+        throw new Error("TokenUsage test harness could not remove ES module syntax");
+      }
+
+      // Force the classic JSX runtime. Babel's automatic runtime emits an
+      // import from `react/jsx-runtime`; code compiled by Function is a classic
+      // script, where import declarations are a SyntaxError. React is passed
+      // into Function explicitly below, so classic React.createElement output
+      // works without an ES-module loader.
+      const { code } = Babel.transform(source, {
+        presets: [["react", { runtime: "classic" }]],
+      });
+      const TokenUsage = Function(
+        "React",
+        "Card",
+        `${code}; return TokenUsage;`
+      )(React, window.Card);
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+
+      function renderPreview() {
+        const totalTokens = Number(document.getElementById("total_tokens").value);
+        const contextWindow = Number(
+          document.getElementById("context_window").value
+        );
+
+        window.props = {
+          total_tokens: totalTokens,
+          context_window: contextWindow,
+        };
+
+        root.render(React.createElement(TokenUsage));
+      }
+
+      document
+        .getElementById("controls")
+        .addEventListener("input", renderPreview);
+
+      renderPreview();
+    </script>
+  </body>
+</html>

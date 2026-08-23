@@ -34,6 +34,19 @@ def record_validated_model(model_name: str) -> None:
 
 VALIDATED_MODELS = {item["model"]: item for item in load_validated_models()}
 
+MODELS_WITHOUT_CONTEXT_WINDOW = (
+    "bedrock:us.anthropic.claude-fable-5",
+    "bedrock:us.anthropic.claude-opus-5",
+    "bedrock:us.anthropic.claude-sonnet-5",
+    "bedrock:us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "google-gla:gemini-3.1-pro-preview",
+    "google-gla:gemini-2.5-pro",
+    "google-gla:gemini-2.5-flash",
+)
+MODELS_WITH_CONTEXT_WINDOW = tuple(
+    model for model in AVAILABLE_MODELS if model not in MODELS_WITHOUT_CONTEXT_WINDOW
+)
+
 
 @pytest.mark.available_models
 @pytest.mark.asyncio
@@ -71,3 +84,20 @@ async def test_available_models(model_name: str):
     assert isinstance(output, str)
     assert "ok" in output.lower()
     record_validated_model(model_name)
+
+
+@pytest.mark.parametrize("model_name", MODELS_WITH_CONTEXT_WINDOW)
+def test_context_window_available(model_name: str):
+    from agent_penny.available_models import get_context_window
+
+    context_window = get_context_window(model_name)
+
+    assert isinstance(context_window, int)
+    assert context_window > 0
+
+
+@pytest.mark.parametrize("model_name", MODELS_WITHOUT_CONTEXT_WINDOW)
+def test_context_window_unavailable(model_name: str):
+    from agent_penny.available_models import get_context_window
+
+    assert get_context_window(model_name) is None

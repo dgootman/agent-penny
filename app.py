@@ -40,6 +40,7 @@ from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.available_models import (
     AVAILABLE_MODELS_BY_PROVIDER,
     MODEL_ENV_VARS_BY_PROVIDER,
+    get_context_window,
 )
 from agent_penny.chainlit_utils import get_user
 from agent_penny.data import LocalDataLayer
@@ -344,6 +345,8 @@ async def process_message(
 
             agent: Agent = cl.user_session.get("agent")
 
+            context_window = get_context_window(agent.model)
+
             message_history = cl.user_session.get("message_history", [])
 
             logger.trace(
@@ -383,7 +386,20 @@ async def process_message(
                     logger.trace("Event received", event=event)
 
                     if isinstance(event, AgentRunResultEvent):
-                        await cl.Message(event.result.output).send()
+                        usage = event.result.response.usage
+                        await cl.Message(
+                            event.result.output,
+                            elements=[
+                                cl.CustomElement(
+                                    name="TokenUsage",
+                                    props={
+                                        "total_tokens": usage.total_tokens,
+                                        "context_window": context_window,
+                                    },
+                                )
+                            ],
+                        ).send()
+
                         cl.user_session.set(
                             "message_history", event.result.all_messages()
                         )

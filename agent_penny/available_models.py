@@ -1,5 +1,6 @@
 """Models offered in Agent Penny's settings UI."""
 
+import genai_prices.data
 from pydantic_ai.models import Model
 
 from agent_penny.models.codex import CodexOpenAIResponsesModel
@@ -59,6 +60,12 @@ AVAILABLE_MODELS = tuple(
     model for models in AVAILABLE_MODELS_BY_PROVIDER.values() for model in models
 )
 
+PROVIDER_ALIASES = {
+    "bedrock": "aws",
+    "google-gla": "google",
+    "openai-codex": "openai",
+}
+
 
 def resolve_model(model: str | Model | None) -> str | Model | None:
     """Translate a UI model name into a model understood by Pydantic AI."""
@@ -73,3 +80,31 @@ def resolve_model(model: str | Model | None) -> str | Model | None:
     if provider == "openai-codex":
         return CodexOpenAIResponsesModel(model_id)
     return model
+
+
+def get_context_window(model: str | Model | None) -> int | None:
+    if not model:
+        return None
+    elif isinstance(model, str):
+        if ":" not in model:
+            return None
+        provider_id, model_id = model.split(":", 1)
+    else:
+        if not model.provider:
+            return None
+        provider_id, model_id = (model.provider.name, model.model_name)
+
+    provider_id = PROVIDER_ALIASES.get(provider_id, provider_id)
+
+    provider_info = next(
+        (p for p in genai_prices.data.providers if p.id == provider_id), None
+    )
+
+    if not provider_info:
+        return None
+
+    model_info = provider_info.find_model(model_id)
+    if not model_info:
+        return None
+
+    return model_info.context_window
