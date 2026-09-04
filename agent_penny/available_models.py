@@ -16,6 +16,7 @@ MODEL_ENV_VARS_BY_PROVIDER = {
 
 AVAILABLE_MODELS_BY_PROVIDER = {
     "anthropic": (  # https://platform.claude.com/docs/en/about-claude/models/overview
+        "anthropic:claude-fable-5-1",
         "anthropic:claude-fable-5",
         "anthropic:claude-opus-5",
         "anthropic:claude-sonnet-5",

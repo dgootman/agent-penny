@@ -1,5 +1,7 @@
 - model: anthropic:claude-fable-5
   last_tested: '2026-07-25'
+- model: anthropic:claude-fable-5-1
+  last_tested: '2026-09-04'
 - model: anthropic:claude-haiku-4-5
   last_tested: '2026-07-25'
 - model: anthropic:claude-opus-5
