@@ -31,7 +31,7 @@ async def test_codex_agent(capsys: pytest.CaptureFixture[str]):
 
     await init_chainlit_context(emit_mock)
 
-    agent = Agent(model=CodexOpenAIResponsesModel("gpt-5.4"))
+    agent = Agent(model=CodexOpenAIResponsesModel("gpt-5.6-luna"))
 
     result = None
     async with agent.run_stream_events("Who is Miss Moneypenny?") as stream:
