@@ -8,6 +8,11 @@ class Calendar(TypedDict):
     description: NotRequired[str]
 
 
+class CalendarEventId(TypedDict):
+    id: str
+    calendar_id: Literal["primary"] | str
+
+
 class CalendarEventAttributes(TypedDict):
     name: str
     description: NotRequired[str]

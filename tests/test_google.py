@@ -125,10 +125,7 @@ def test_calendar_create_event(provider: GoogleProvider):
         ta = TypeAdapter(CalendarEvent)
         ta.validate_python(event)
     finally:
-        with provider.calendar_service() as calendar_service:
-            calendar_service.events().delete(
-                calendarId=event["calendar_id"], eventId=event["id"]
-            ).execute()
+        provider.calendar_delete_event(event)
 
 
 def test_calendar_update_event(provider: GoogleProvider):

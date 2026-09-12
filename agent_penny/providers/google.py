@@ -22,6 +22,7 @@ from agent_penny.types import (
     Calendar,
     CalendarEvent,
     CalendarEventAttributes,
+    CalendarEventId,
     CreateCalendarEventRequest,
     CreateDraftRequest,
     CreateDraftResponse,
@@ -58,6 +59,7 @@ class GoogleProvider:
                 [
                     self.calendar_create_event,
                     self.calendar_update_event,
+                    self.calendar_delete_event,
                     self.calendar_list,
                     self.calendar_list_events,
                     self.email_list_messages,
@@ -74,6 +76,7 @@ class GoogleProvider:
                 in [
                     "calendar_create_event",
                     "calendar_update_event",
+                    "calendar_delete_event",
                 ]
             ),
         )
@@ -281,6 +284,26 @@ class GoogleProvider:
         logger.info("Updated calendar event", event=event)
 
         return event
+
+    def calendar_delete_event(self, event: CalendarEventId) -> None:
+        logger.debug("Deleting calendar event", event=event)
+
+        with self.calendar_service() as calendar_service:
+            google_event = (
+                calendar_service.events()
+                .get(calendarId=event["calendar_id"], eventId=event["id"])
+                .execute()
+            )
+
+            # Log this as debug rather than trace to keep a record of events
+            # that may have been deleted accidentally
+            logger.debug("Deleting Google calendar event", google_event=google_event)
+
+            calendar_service.events().delete(
+                calendarId=event["calendar_id"], eventId=event["id"]
+            ).execute()
+
+        logger.info("Deleted calendar event", event=event)
 
     def google_message_adapter(self, message) -> MailMessage:
         email = message_from_bytes(urlsafe_b64decode(message["raw"]))
