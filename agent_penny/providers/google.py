@@ -1,13 +1,33 @@
+from __future__ import annotations
+
 import os
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from datetime import date, datetime, tzinfo
+from datetime import datetime, time, tzinfo
 from email import message_from_bytes
 from email.header import decode_header
 from email.message import EmailMessage
 from io import BytesIO
+from typing import TYPE_CHECKING, Literal
 from zoneinfo import ZoneInfo
 
 import chainlit as cl
+from bidict import bidict
+from dateutil.rrule import (
+    DAILY,
+    FR,
+    HOURLY,
+    MO,
+    MONTHLY,
+    SA,
+    SU,
+    TH,
+    TU,
+    WE,
+    WEEKLY,
+    YEARLY,
+    rrule,
+    weekday,
+)
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -17,26 +37,58 @@ from markitdown import MarkItDown, StreamInfo
 from pydantic_ai import FunctionToolset, ModelRetry
 
 from agent_penny.chainlit_utils import get_user
+from agent_penny.date_utils import get_tz_name
 from agent_penny.tools.approval import ApprovalRequiredToolset
 from agent_penny.types import (
     Calendar,
     CalendarEvent,
     CalendarEventAttributes,
     CalendarEventId,
+    CalendarEventRecurrence,
     CreateCalendarEventRequest,
     CreateDraftRequest,
     CreateDraftResponse,
     Draft,
     DraftRequest,
+    Frequency,
     MailContentType,
     MailMessage,
     MailMessageSnippet,
     UpdateCalendarEventRequest,
     UpdateDraftRequest,
     UpdateDraftResponse,
+    Weekday,
 )
 
+if TYPE_CHECKING:
+    from googleapiclient._apis.calendar.v3 import CalendarResource, Event, EventDateTime
+    from googleapiclient._apis.gmail.v1 import GmailResource
+
 md = MarkItDown(enable_plugins=False)
+
+RruleFrequency = Literal[0, 1, 2, 3, 4, 5, 6]
+
+freq_to_rrule: bidict[Frequency, RruleFrequency] = bidict(
+    {
+        "yearly": YEARLY,
+        "monthly": MONTHLY,
+        "weekly": WEEKLY,
+        "daily": DAILY,
+        "hourly": HOURLY,
+    }  # type: ignore[arg-type]
+)
+
+weekday_to_rrule: bidict[Weekday, weekday] = bidict(
+    {
+        "Monday": MO,
+        "Tuesday": TU,
+        "Wednesday": WE,
+        "Thursday": TH,
+        "Friday": FR,
+        "Saturday": SA,
+        "Sunday": SU,
+    }  # type: ignore[arg-type]
+)
 
 
 class GoogleProvider:
@@ -81,10 +133,10 @@ class GoogleProvider:
             ),
         )
 
-    def calendar_service(self):
+    def calendar_service(self) -> CalendarResource:
         return build("calendar", "v3", credentials=self.credentials)
 
-    def email_service(self):
+    def email_service(self) -> GmailResource:
         return build("gmail", "v1", credentials=self.credentials)
 
     def calendar_list(self) -> list[Calendar]:
@@ -121,15 +173,15 @@ class GoogleProvider:
         return calendars
 
     def _google_event_adapter(
-        self, event, calendar_id: str, tz: tzinfo | None
+        self, event: Event, calendar_id: str, tz: tzinfo | None
     ) -> CalendarEvent:
-        def date_adapter(google_date: dict[str, str]) -> datetime | date:
+        def date_adapter(google_date: EventDateTime) -> datetime:
+            if tz is None:
+                raise ValueError("Missing timezone")
             if "dateTime" in google_date:
-                if tz is None:
-                    raise ValueError("Missing timezone")
                 return datetime.fromisoformat(google_date["dateTime"]).astimezone(tz=tz)
             if "date" in google_date:
-                return date.fromisoformat(google_date["date"])
+                return datetime.fromisoformat(google_date["date"]).astimezone(tz=tz)
             raise ValueError(f"Invalid date: {google_date}")
 
         calendar_event: CalendarEvent = {
@@ -205,32 +257,72 @@ class GoogleProvider:
 
         return sorted(events, key=lambda event: event["start_time"].isoformat())
 
-    def _calendar_request_adapter(self, request: CalendarEventAttributes):
-        def date_adapter(value: date | datetime) -> dict[str, str]:
-            if isinstance(value, datetime):
-                return {"dateTime": value.isoformat()}
-            if isinstance(value, date):
-                return {"date": value.isoformat()}
-            raise ValueError(f"Invalid date: {value}")
+    def _calendar_request_adapter(self, request: CalendarEventAttributes) -> Event:
+        def tz_decorator(dt: EventDateTime, value: datetime):
+            tz = get_tz_name(value)
+            assert tz
+            dt["timeZone"] = tz
+            return dt
 
-        return {
+        def datetime_adapter(value: datetime) -> EventDateTime:
+            return tz_decorator({"dateTime": value.isoformat()}, value)
+
+        def date_adapter(value: datetime) -> EventDateTime:
+            return tz_decorator({"date": value.date().isoformat()}, value)
+
+        def recurrence_adapter(recurrence: CalendarEventRecurrence) -> str:
+            rule = rrule(
+                freq=freq_to_rrule[recurrence["frequency"]],
+                interval=recurrence.get("interval", 1),
+                byweekday=[weekday_to_rrule[d] for d in recurrence["weekdays"]]
+                if "weekdays" in recurrence
+                else None,
+            )
+
+            # As per https://developers.google.com/workspace/calendar/api/v3/reference/events/insert:
+            # DTSTART and DTEND lines are not allowed in this field; event start and end times are specified in the start and end fields.
+            rule._dtstart = None  # type: ignore[attr-defined, ty:unresolved-attribute]
+
+            return str(rule)
+
+        start, end = map(
+            date_adapter
+            if all(
+                t.time() == time.min
+                for t in [request["start_time"], request["end_time"]]
+            )
+            else datetime_adapter,
+            [request["start_time"], request["end_time"]],
+        )
+
+        event: Event = {
             "summary": request["name"],
-            "location": request.get("location"),
-            "description": request.get("description"),
-            "start": date_adapter(request["start_time"]),
-            "end": date_adapter(request["end_time"]),
+            "start": start,
+            "end": end,
         }
+
+        if request.get("location"):
+            event["location"] = request["location"]
+
+        if request.get("description"):
+            event["description"] = request["description"]
+
+        if request.get("recurrence"):
+            event["recurrence"] = [recurrence_adapter(r) for r in request["recurrence"]]
+
+        return event
 
     def calendar_create_event(
         self, request: CreateCalendarEventRequest
     ) -> CalendarEvent:
         logger.debug("Adding calendar event", request=request)
 
-        tz = (
-            request["start_time"].tzinfo
-            if isinstance(request["start_time"], datetime)
-            else None
-        )
+        if request["start_time"].tzinfo is None:
+            raise ModelRetry("Start time is missing a timezone")
+        elif request["end_time"].tzinfo is None:
+            raise ModelRetry("End time is missing a timezone")
+
+        tz = request["start_time"].tzinfo
 
         google_request = self._calendar_request_adapter(request)
 

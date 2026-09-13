@@ -1,5 +1,11 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import Literal, NotRequired, TypedDict
+
+Frequency = Literal["yearly", "monthly", "weekly", "daily", "hourly"]
+
+Weekday = Literal[
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+]
 
 
 class Calendar(TypedDict):
@@ -13,37 +19,43 @@ class CalendarEventId(TypedDict):
     calendar_id: Literal["primary"] | str
 
 
+class CalendarEventRecurrence(TypedDict):
+    frequency: Frequency
+    interval: NotRequired[int]
+    weekdays: NotRequired[list[Weekday]]
+
+
 class CalendarEventAttributes(TypedDict):
     name: str
     description: NotRequired[str]
     location: NotRequired[str]
-    start_time: datetime | date
-    end_time: datetime | date
-    calendar_id: Literal["primary"] | str
+    start_time: datetime
+    end_time: datetime
+    recurrence: NotRequired[list[CalendarEventRecurrence]]
 
 
 class CreateCalendarEventRequest(CalendarEventAttributes):
     """
     Request to create a calendar event.
 
-    Start and end times are either full dates (for all-day events) or date, time, and timezone (for non-all-day events).
+    Start and end times must specify a timezone.
     """
 
-    pass
+    calendar_id: Literal["primary"] | str
 
 
-class UpdateCalendarEventRequest(CalendarEventAttributes):
+class UpdateCalendarEventRequest(CalendarEventId, CalendarEventAttributes):
     """
     Request to update a calendar event.
 
-    Start and end times are either full dates (for all-day events) or date, time, and timezone (for non-all-day events).
+    Start and end times must specify a timezone.
     """
 
-    id: str
 
-
-class CalendarEvent(CalendarEventAttributes):
-    id: str
+class CalendarEvent(CalendarEventId, CalendarEventAttributes):
+    """
+    Calendar Event information.
+    """
 
 
 MailHeaders = TypedDict(

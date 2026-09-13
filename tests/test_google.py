@@ -16,7 +16,12 @@ from pydantic import TypeAdapter
 
 from agent_penny.auth.google import ExtendedGoogleOAuthProvider
 from agent_penny.providers.google import GoogleProvider
-from agent_penny.types import Calendar, CalendarEvent, MailMessageSnippet
+from agent_penny.types import (
+    Calendar,
+    CalendarEvent,
+    CreateCalendarEventRequest,
+    MailMessageSnippet,
+)
 
 pytestmark = pytest.mark.skipif(
     not os.path.exists("client_secrets.json"), reason="No client secrets file"
@@ -107,18 +112,38 @@ def test_calendar_list_events_not_found(provider: GoogleProvider):
     assert len(events) == 0
 
 
-def test_calendar_create_event(provider: GoogleProvider):
-    tz = ZoneInfo("America/Vancouver")
-    tomorrow = datetime.now(tz).date() + timedelta(days=1)
+tz = ZoneInfo("America/Vancouver")
+tomorrow = datetime.now(tz).date() + timedelta(days=1)
 
-    event = provider.calendar_create_event(
+
+@pytest.mark.parametrize(
+    "create_request",
+    [
         {
             "name": "Test Event",
             "start_time": datetime.combine(tomorrow, time(7), tz),
             "end_time": datetime.combine(tomorrow, time(8), tz),
             "calendar_id": "primary",
-        }
-    )
+        },
+        {
+            "name": "All-day Test Event",
+            "start_time": datetime.combine(tomorrow, time.min, tz),
+            "end_time": datetime.combine(tomorrow + timedelta(days=1), time.min, tz),
+            "calendar_id": "primary",
+        },
+        {
+            "name": "Recurring Test Event",
+            "start_time": datetime.combine(tomorrow, time(7), tz),
+            "end_time": datetime.combine(tomorrow, time(8), tz),
+            "calendar_id": "primary",
+            "recurrence": [{"frequency": "weekly"}],
+        },
+    ],
+)
+def test_calendar_create_event(
+    provider: GoogleProvider, create_request: CreateCalendarEventRequest
+):
+    event = provider.calendar_create_event(create_request)
 
     try:
         assert event
