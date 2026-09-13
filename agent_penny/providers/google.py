@@ -445,9 +445,9 @@ class GoogleProvider:
 
                 def get_required_header(name: str) -> str:
                     result = get_header(name)
-                    if result:
-                        return result
-                    raise ValueError(f"Message is missing {name} header: {message}")
+                    if result is None:
+                        raise ValueError(f"Message is missing {name} header: {message}")
+                    return result
 
                 message_snippet: MailMessageSnippet = {
                     "id": message["id"],
