@@ -174,6 +174,11 @@ class LocalDataLayer(BaseDataLayer):
 
     def save_thread(self, thread: ThreadDict):
         data_file = self.threads_dir / f"{thread['id']}.json"
+
+        # Overwriting createdAt with update time
+        # to bring ongoing threads to the top of the list
+        thread["createdAt"] = datetime.now(UTC).isoformat()
+
         with open(data_file, "w") as f:
             json.dump(thread, f)
 
