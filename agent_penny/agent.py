@@ -57,7 +57,7 @@ def create() -> Agent:
         WebFetchCapability(),
     ]
 
-    if exa_api_key := settings.EXA_API_KEY:
+    if exa_api_key := user_settings.get("exa_api_key") or settings.EXA_API_KEY:
         capabilities.append(
             PrefixTools(
                 ExaSearch(client=AsyncExa(api_key=exa_api_key)),
@@ -65,13 +65,19 @@ def create() -> Agent:
             )
         )
 
-    if tavily_api_key := settings.TAVILY_API_KEY:
+    if tavily_api_key := user_settings.get("tavily_api_key") or settings.TAVILY_API_KEY:
         capabilities.append(TavilyCapability(api_key=tavily_api_key))
 
-    if perplexity_api_key := settings.PERPLEXITY_API_KEY:
+    if (
+        perplexity_api_key := user_settings.get("perplexity_api_key")
+        or settings.PERPLEXITY_API_KEY
+    ):
         capabilities.append(PerplexityCapability(api_key=perplexity_api_key))
 
-    if settings.DUCKDUCKGO_SEARCH_ENABLED:
+    if (
+        user_settings.get("duckduckgo_search_enabled")
+        or settings.DUCKDUCKGO_SEARCH_ENABLED
+    ):
         capabilities.append(DuckDuckGoCapability())
 
     logger.debug(

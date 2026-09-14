@@ -33,8 +33,17 @@ def save(file_name: str, content: str) -> None:
 
 
 class UserSettings(TypedDict):
+    # Model
     model: NotRequired[str]
     thinking: NotRequired[bool]
+
+    # Search
+    duckduckgo_search_enabled: NotRequired[bool]
+    exa_api_key: NotRequired[str]
+    tavily_api_key: NotRequired[str]
+    perplexity_api_key: NotRequired[str]
+
+    # Preferences
     timezone: NotRequired[str]
 
 

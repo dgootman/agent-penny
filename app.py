@@ -10,7 +10,7 @@ from uuid import uuid4
 import chainlit as cl
 import logfire
 from chainlit.config import config as cl_config
-from chainlit.input_widget import InputWidget, Select, TextInput
+from chainlit.input_widget import Checkbox, InputWidget, Select, Tab, TextInput
 from chainlit.oauth_providers import providers as oauth_providers
 from chainlit.types import ThreadDict
 from loguru import logger
@@ -148,7 +148,7 @@ async def render_settings():
     user_model = user_settings.get("model") or settings.MODEL
     user_timezone = user_settings.get("timezone")
 
-    setting_inputs: list[InputWidget] = []
+    model_inputs: list[InputWidget] = []
 
     available_models = [
         model
@@ -158,33 +158,73 @@ async def render_settings():
     ]
 
     if available_models:
-        setting_inputs.append(
+        model_inputs.append(
             Select(
                 id="model",
                 label="Model",
+                description="Select a configured model.",
                 values=available_models,
                 initial_value=user_model,
             )
         )
 
-    setting_inputs.append(
+    model_inputs.append(
         TextInput(
             id="custom_model",
             label="Custom Model",
+            description="Override the selection with a Pydantic AI model ID.",
             initial=None if user_model in available_models else user_model,
         )
     )
 
-    setting_inputs.append(
-        Select(
-            id="timezone",
-            label="Timezone",
-            initial_value=user_timezone,
-            values=sorted(zoneinfo.available_timezones()),
-        )
+    model_tab = Tab("model", "Model", model_inputs)
+
+    search_tab = Tab(
+        "search",
+        "Search",
+        [
+            Checkbox(
+                id="duckduckgo_search_enabled",
+                label="DuckDuckGo Search",
+                description="Enable DuckDuckGo search.",
+                initial=user_settings.get("duckduckgo_search_enabled") or False,
+            ),
+            TextInput(
+                id="exa_api_key",
+                label="Exa API Key",
+                description="Enable Exa search with an API key.",
+                initial=user_settings.get("exa_api_key"),
+            ),
+            TextInput(
+                id="tavily_api_key",
+                label="Tavily API Key",
+                description="Enable Tavily search with an API key.",
+                initial=user_settings.get("tavily_api_key"),
+            ),
+            TextInput(
+                id="perplexity_api_key",
+                label="Perplexity API Key",
+                description="Enable Perplexity search with an API key.",
+                initial=user_settings.get("perplexity_api_key"),
+            ),
+        ],
     )
 
-    await cl.ChatSettings(setting_inputs).send()
+    preferences_tab = Tab(
+        "preferences",
+        "Preferences",
+        [
+            Select(
+                id="timezone",
+                label="Timezone",
+                description="Used for dates, times, and scheduling.",
+                initial_value=user_timezone,
+                values=sorted(zoneinfo.available_timezones()),
+            )
+        ],
+    )
+
+    await cl.ChatSettings([model_tab, search_tab, preferences_tab]).send()
 
 
 if conversation_history_enabled:
@@ -310,9 +350,9 @@ async def on_settings_update(chat_settings: dict[str, Any]):
             chat_settings["model"] = custom_model
 
         # Remove keys with empty values
-        for key in chat_settings.keys():
-            if not chat_settings[key]:
-                del chat_settings[key]
+        empty_keys = [k for k, v in chat_settings.items() if not v]
+        for key in empty_keys:
+            del chat_settings[key]
 
         # TODO: Validate that chat settings match the user-setting structure
         user_data.save_settings(chat_settings)  # type: ignore[arg-type,ty:invalid-argument-type]
