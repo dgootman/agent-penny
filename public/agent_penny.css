@@ -1,6 +1,69 @@
-@media (prefers-color-scheme: dark) {
-  /* Invert the color of the Agent Penny avatar in dark mode */
-  img[alt="Avatar for Agent Penny"] {
-    filter: invert(100%);
-  }
+/* Chainlit theme tokens: colour and typography only. */
+html.dark {
+  --font-sans: "Avenir Next", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --background: 225 16% 8% !important;
+  --foreground: 34 25% 93% !important;
+  --card: 225 14% 11% !important;
+  --card-foreground: 34 25% 93% !important;
+  --popover: 225 14% 11% !important;
+  --popover-foreground: 34 25% 93% !important;
+  --primary: 186 43% 60% !important;
+  --primary-foreground: 225 16% 8% !important;
+  --secondary: 225 11% 16% !important;
+  --secondary-foreground: 34 25% 93% !important;
+  --muted: 225 11% 16% !important;
+  --muted-foreground: 220 10% 65% !important;
+  --accent: 200 15% 19% !important;
+  --accent-foreground: 34 25% 93% !important;
+  --border: 200 15% 23% !important;
+  --input: 200 15% 23% !important;
+  --ring: 186 43% 60% !important;
+
+  --sidebar-background: 225 18% 8% !important;
+  --sidebar-foreground: 34 25% 93% !important;
+  --sidebar-primary: 186 43% 60% !important;
+  --sidebar-primary-foreground: 225 16% 8% !important;
+  --sidebar-accent: 225 12% 15% !important;
+  --sidebar-accent-foreground: 34 25% 93% !important;
+  --sidebar-border: 200 15% 20% !important;
+  --sidebar-ring: 186 43% 60% !important;
+
+  --stop-icon-color: #7abdc0;
+  --loading-cursor-color: #7abdc0;
+}
+
+/* Chainlit adds an opaque main panel when the conversation sidebar is enabled. */
+html.dark body,
+html.dark main {
+  background-color: #0c1014 !important;
+  background-image:
+    linear-gradient(rgb(7 11 15 / 76%), rgb(7 11 15 / 88%)),
+    url("background.webp") !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+}
+
+/* Oxblood is reserved for sent messages and the saved reasoning level. */
+html.dark .step[data-step-type="user_message"] .bg-accent,
+html.dark
+  #mode-picker-popover-reasoning
+  [cmdk-item].bg-accent[aria-selected="false"] {
+  background-color: #824457 !important;
+  color: #fff !important;
+}
+
+/* The active keyboard or hover target uses cyan. */
+html.dark
+  #mode-picker-popover-reasoning
+  [cmdk-item][aria-selected="true"] {
+  background-color: rgb(120 184 188 / 14%) !important;
+  color: #edfafa !important;
+}
+
+/* Chainlit uses the .dark class, including after a manual theme toggle. */
+html.dark img[alt="Avatar for Agent Penny"] {
+  filter: invert(100%);
 }
