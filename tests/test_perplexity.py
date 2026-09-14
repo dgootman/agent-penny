@@ -8,10 +8,13 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_perplexity():
-    from agent_penny.tools.perplexity import perplexity
+@pytest.mark.asyncio
+async def test_perplexity():
+    from agent_penny.capabilities.perplexity import PerplexityCapability
 
-    results = perplexity("Who is Miss Moneypenny?")
+    capability = PerplexityCapability(os.environ["PERPLEXITY_API_KEY"])
+
+    results = await capability.perplexity("Who is Miss Moneypenny?")
 
     logger.debug("Results", results=results.to_dict())
     assert results
