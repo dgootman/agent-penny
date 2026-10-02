@@ -51,7 +51,6 @@ AVAILABLE_MODELS_BY_PROVIDER = {
         "openai:gpt-5.5",
         "openai:gpt-5.4",
         "openai:gpt-5.4-mini",
-        "openai:gpt-5.4-nano",
     ),
     "openai-codex": (  # https://developers.openai.com/api/docs/models/all
         "openai-codex:gpt-6-astra",
