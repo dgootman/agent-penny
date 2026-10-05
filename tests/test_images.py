@@ -15,7 +15,9 @@ from tests.utils import init_chainlit_context
     "model_name",
     [
         "openai:gpt-5.6-sol",
+        "openai:gpt-6-luna",
         "openai-codex:gpt-5.6-sol",
+        "openai-codex:gpt-6-luna",
     ],
 )
 async def test_generate_image(
