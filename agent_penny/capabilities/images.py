@@ -53,8 +53,13 @@ async def generate_image(
         ],
         output_type=BinaryImage,
     ) as result:
-        output = await result.get_output()
-        return save_image(prompt, output)
+        # OmniRoute compatibility:
+        # BinaryImage is complete when yielded; stop before a gateway's
+        # spurious error after the completed image.
+        async for image in result.stream_output(debounce_by=None):
+            return save_image(prompt, image)
+
+    raise ModelRetry("No image was generated")
 
 
 async def generate_image_ideogram(

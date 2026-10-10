@@ -5,9 +5,14 @@ from typing import Any
 
 import pytest
 from loguru import logger
-from pydantic_ai import Agent
+from pydantic_ai import Agent, BinaryImage
+from pydantic_ai.capabilities import ImageGeneration
+from pydantic_ai.models.openai import OpenAIResponsesModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from tests.utils import init_chainlit_context
+
+IMAGE_PROMPT = "Generate an image of a secret agent secretary."
 
 
 @pytest.mark.asyncio
@@ -61,9 +66,53 @@ async def test_generate_image(
         capabilities=[ImageGenerationCapability()],
     )
 
-    async with agent.run_stream(
-        "Generate an image of a secret agent secretary."
+    async with agent.run_stream(IMAGE_PROMPT) as result:
+        output = await result.get_output()
+        assert output
+
+        assert "/private/images/" in output
+        match = re.search(r"/private/images/[0-9a-f]+.(jpg|png|webp)", output)
+        assert match, f"Unexpected file name in output: {output}"
+        image_path = match.group(0)
+
+        assert (user_data.path("images") / image_path.split("/")[-1]).exists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    "OMNIROUTE_API_KEY" not in os.environ, reason="OMNIROUTE_API_KEY not set"
+)
+@pytest.mark.skipif(
+    "OMNIROUTE_BASE_URL" not in os.environ, reason="OMNIROUTE_BASE_URL not set"
+)
+async def test_omniroute_workaround():
+    model = OpenAIResponsesModel(
+        model_name="gpt-6-luna",
+        provider=OpenAIProvider(
+            base_url=os.environ["OMNIROUTE_BASE_URL"],
+            api_key=os.environ["OMNIROUTE_API_KEY"],
+        ),
+    )
+
+    async with Agent(model).run_stream(
+        IMAGE_PROMPT,
+        capabilities=[ImageGeneration(quality="low")],
+        output_type=BinaryImage,
     ) as result:
+        with pytest.raises(TypeError, match="'NoneType' object is not iterable"):
+            await result.get_output()
+
+    from agent_penny import user_data
+    from agent_penny.capabilities.images import ImageGenerationCapability
+
+    await init_chainlit_context()
+
+    agent = Agent(
+        model=model,
+        capabilities=[ImageGenerationCapability()],
+    )
+
+    async with agent.run_stream(IMAGE_PROMPT) as result:
         output = await result.get_output()
         assert output
 
