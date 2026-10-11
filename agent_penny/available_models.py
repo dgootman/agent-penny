@@ -18,10 +18,12 @@ AVAILABLE_MODELS_BY_PROVIDER = {
     "anthropic": (  # https://platform.claude.com/docs/en/about-claude/models/overview
         "anthropic:claude-fable-5-1",
         "anthropic:claude-opus-5-5",
-        "anthropic:claude-sonnet-5",
-        "anthropic:claude-haiku-4-5",
+        "anthropic:claude-sonnet-5-5",
+        "anthropic:claude-haiku-5-5",
         "anthropic:claude-fable-5",
         "anthropic:claude-opus-5",
+        "anthropic:claude-sonnet-5",
+        "anthropic:claude-haiku-4-5",
     ),
     "bedrock": (  # https://platform.claude.com/docs/en/about-claude/models/overview
         "bedrock:us.anthropic.claude-fable-5",
@@ -43,8 +45,9 @@ AVAILABLE_MODELS_BY_PROVIDER = {
     ),
     "openai": (  # https://developers.openai.com/api/docs/models/all
         "openai:gpt-6-astra",
-        "openai:gpt-6-sol",
+        "openai:gpt-6.1-sol",
         "openai:gpt-6-luna",
+        "openai:gpt-6-sol",
         "openai:gpt-5.6-sol",
         "openai:gpt-5.6-terra",
         "openai:gpt-5.6-luna",
@@ -54,8 +57,9 @@ AVAILABLE_MODELS_BY_PROVIDER = {
     ),
     "openai-codex": (  # https://developers.openai.com/api/docs/models/all
         "openai-codex:gpt-6-astra",
-        "openai-codex:gpt-6-sol",
+        "openai-codex:gpt-6.1-sol",
         "openai-codex:gpt-6-luna",
+        "openai-codex:gpt-6-sol",
         "openai-codex:gpt-5.6-sol",
         "openai-codex:gpt-5.6-terra",
         "openai-codex:gpt-5.6-luna",

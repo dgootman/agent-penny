@@ -35,7 +35,6 @@ def record_validated_model(model_name: str) -> None:
 VALIDATED_MODELS = {item["model"]: item for item in load_validated_models()}
 
 MODELS_WITHOUT_CONTEXT_WINDOW = (
-    "bedrock:us.anthropic.claude-fable-5",
     "google:gemini-3.1-pro-preview",
     "google:gemini-2.5-pro",
 )
