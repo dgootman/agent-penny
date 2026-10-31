@@ -51,7 +51,7 @@ async def test_get_instructions(timezone: str, tmp_user_data):
     await agent.run("Hello")
 
     offset_delta = ZoneInfo(timezone).utcoffset(datetime.now())
-    assert offset_delta
+    assert offset_delta is not None
     positive_offset = offset_delta.days >= 0
     if not positive_offset:
         offset_delta = -offset_delta
