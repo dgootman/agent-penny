@@ -180,3 +180,100 @@ async def test_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert len(response.parts) == 1
     assert response.parts[0].part_kind == "text"
     assert response.parts[0].content == "Agent Penny is a personal assistant"
+
+
+@pytest.mark.parametrize("command", [None, "daily-brief"])
+@pytest.mark.asyncio
+async def test_skill_command_dispatch(tmp_user_data, monkeypatch, command):
+    """Exercise the real Chainlit payload -> Penny -> skill instructions path.
+
+    Only the websocket transport and LLM are mocked; Chainlit deserialization,
+    Penny's registered callbacks, agent construction and skill loading are real.
+    """
+    import asyncio
+    from uuid import uuid4
+
+    from chainlit.config import config
+    from chainlit.socket import process_message
+
+    import agent_penny.agent
+    import app  # noqa: F401
+
+    skill_dir = tmp_user_data / "users/test-user/skills/daily-brief"
+    skill_dir.mkdir(parents=True)
+    skill_dir.joinpath("SKILL.md").write_text(
+        "---\nname: daily-brief\ndescription: Prepare a daily brief\n---\n"
+        "Always include the secret test phrase: BRIEF_INSTRUCTIONS_LOADED.\n"
+    )
+    instructions = []
+    prompts = []
+
+    async def model_function(messages, info):
+        instructions.append(info.instructions)
+        prompts.extend(
+            part.content
+            for message in messages
+            if message.kind == "request"
+            for part in message.parts
+            if part.part_kind == "user-prompt" and isinstance(part.content, str)
+        )
+        yield "Brief completed"
+
+    monkeypatch.setattr(
+        agent_penny.agent,
+        "default_model",
+        FunctionModel(stream_function=model_function),
+    )
+    emit = AsyncMock()
+    session = WebsocketSession(
+        id=str(uuid4()),
+        socket_id=str(uuid4()),
+        emit=emit,
+        emit_call=AsyncMock(side_effect=AssertionError("Unexpected client request")),
+        user_env={},
+        client_type="webapp",
+        user=cl.User(identifier="test_user"),
+    )
+    init_ws_context(session)
+    try:
+        assert config.code.on_chat_start is not None
+        await config.code.on_chat_start()
+        await asyncio.sleep(0)  # Flush the skill catalog's scheduled UI update.
+        commands = [
+            args[1] for args, _ in emit.call_args_list if args[0] == "set_commands"
+        ]
+        assert commands and commands[-1][0]["id"] == "daily-brief"
+
+        await process_message(
+            session,
+            {
+                "message": {
+                    "id": str(uuid4()),
+                    "threadId": session.thread_id,
+                    "createdAt": datetime.now().isoformat(),
+                    "output": "Prepare my brief",
+                    "name": "test_user",
+                    "type": "user_message",
+                    "command": command,
+                    "modes": {"reasoning": "none"},
+                },
+                "fileReferences": None,
+            },
+        )
+        assert instructions, "The registered on_message callback must reach the model"
+        assert "Prepare my brief" in prompts
+        assert "daily-brief" in instructions[0]
+        assert ("BRIEF_INSTRUCTIONS_LOADED" in instructions[0]) == (command is not None)
+        emitted = [
+            args[1] for args, _ in emit.call_args_list if args[0] == "new_message"
+        ]
+        assert emitted[-1]["output"] == "Brief completed"
+        assert cl.user_session.get("message_history")[-1].text == "Brief completed"
+        await asyncio.sleep(
+            0
+        )  # Drain message persistence tasks before closing the session.
+    finally:
+        from chainlit.user_session import user_sessions
+
+        user_sessions.pop(session.id, None)
+        await session.delete()
