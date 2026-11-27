@@ -2,13 +2,13 @@
 
 # Agent Penny
 
-Agent Penny is a personal AI assistant built with [Chainlit](https://docs.chainlit.io/) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, optional web search via Perplexity/Tavily/DuckDuckGo, and a configurable "thinking" mode for supported models.
+Agent Penny is a personal AI assistant built with [Chainlit Community](https://github.com/chainlit-community/chainlit) and `pydantic-ai`. It provides a conversational interface that can leverage large language models (LLMs), external tools, and your personal data to act as a powerful and context-aware assistant. The agent supports optional Google OAuth for Calendar and Gmail, persistent memory, optional web search via Perplexity/Tavily/DuckDuckGo, and a configurable "thinking" mode for supported models.
 
 ## Architecture Overview
 
 Agent Penny is designed as a modular AI assistant that integrates several modern technologies:
 
-- **Frontend**: [Chainlit](https://docs.chainlit.io/) provides the web interface, handling chat, audio streaming, and OAuth flow.
+- **Frontend**: [Chainlit Community](https://github.com/chainlit-community/chainlit) provides the web interface, handling chat, audio streaming, and OAuth flow.
 - **Agent Orchestration**: [Pydantic AI](https://ai.pydantic.dev/) manages the agent's logic, model interactions, and tool execution.
 - **Model Support**: Supports multiple LLM providers (Google Gemini, OpenAI, Anthropic, AWS Bedrock) through a unified interface.
 - **Voice Stack**: Uses `faster-whisper` for efficient on-device speech-to-text and `kokoro` for high-quality text-to-speech.
@@ -255,7 +255,7 @@ Thinking mode enables advanced reasoning capabilities for supported models. When
 
 ## Built With
 
-- [Chainlit](https://docs.chainlit.io/): For the web UI and chat interface.
+- [Chainlit Community](https://github.com/chainlit-community/chainlit): For the web UI and chat interface.
 - [pydantic-ai](https://github.com/pydantic/pydantic-ai): For the agent and LLM interaction.
 - [Tavily Python](https://github.com/tavily-ai/tavily-python): For Tavily search integration.
 - [MarkItDown](https://github.com/microsoft/markitdown): For converting HTML emails to text.
