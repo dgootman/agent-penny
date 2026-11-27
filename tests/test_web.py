@@ -74,10 +74,14 @@ async def test_fetch_response(
     [
         ("https://httpbin.io/delay/1", 0.1, "TimeoutError"),
         ("https://no-such.example.org", 5, "DnsLookupError"),
-        ("https://expired.badssl.com", 5, "CertificateError"),
+        (
+            "https://expired.x1.test-certs.letsencrypt.org/",
+            5,
+            "CertificateError",
+        ),
         ("https://wrong.host.badssl.com", 5, "CertificateError"),
-        ("https://self-signed.badssl.com", 5, "CertificateError"),
-        ("https://untrusted-root.badssl.com", 5, "CertificateError"),
+        ("https://self-signed.testserver.host/", 5, "CertificateError"),
+        ("https://untrusted-root.testserver.host/", 5, "CertificateError"),
         # TODO: Figure out how to enable revocation and pinning
         # ("https://revoked.badssl.com", 5, "CertificateError"),
         # ("https://pinning-test.badssl.com", 5, "CertificateError"),
