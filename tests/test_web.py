@@ -79,12 +79,11 @@ async def test_fetch_response(
             5,
             "CertificateError",
         ),
-        ("https://wrong.host.badssl.com", 5, "CertificateError"),
+        ("https://wrong-host.testserver.host/", 5, "CertificateError"),
         ("https://self-signed.testserver.host/", 5, "CertificateError"),
         ("https://untrusted-root.testserver.host/", 5, "CertificateError"),
         # TODO: Figure out how to enable revocation and pinning
-        # ("https://revoked.badssl.com", 5, "CertificateError"),
-        # ("https://pinning-test.badssl.com", 5, "CertificateError"),
+        # ("https://revoked.testserver.host/", 5, "CertificateError"),
     ],
 )
 async def test_fetch_error(url: str, timeout: float, error: str):
